@@ -14,8 +14,9 @@ class ResponsavelSitio extends Model
 
     protected $fillable = [
         'bem_material_id',
-        'usuario_id',
-        'papel',
+        'contato_nome',
+        'contato_email',
+        'contato_telefone',
     ];
 
     public function bemMaterial(): BelongsTo
