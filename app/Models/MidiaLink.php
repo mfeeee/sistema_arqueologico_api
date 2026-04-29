@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TipoMidia;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ class MidiaLink extends Model
 
     protected $fillable = [
         'bem_material_id',
-        'tipo',
+        'tipo' => TipoMidia::class,
         'url',
         'descricao',
     ];
