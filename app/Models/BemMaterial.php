@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class BemMaterial extends Model
 {
@@ -30,14 +31,19 @@ class BemMaterial extends Model
         'endereco',
         'latitude',
         'longitude',
+        'geojson',
+        'ano_registro',
+        'descricao_atualizacao',
         'geom',
-        'deletado_em',
     ];
 
     protected $casts = [
+        'artefatos' => 'array',
+        'geojson' => 'array',
         'publicado' => 'boolean',
-        'latitude' => 'float',
-        'longitude' => 'float',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'ano_registro' => 'integer',
         'deletado_em' => 'datetime',
     ];
 
@@ -54,6 +60,14 @@ class BemMaterial extends Model
     public function responsaveis(): HasMany
     {
         return $this->hasMany(ResponsavelSitio::class, 'bem_material_id');
+    }
+
+    protected function geom(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value,
+            set: fn ($value) => $value,
+        );
     }
 
     public function scopePublicados($query)
