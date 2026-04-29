@@ -14,16 +14,26 @@ class Curadoria extends Model
     protected $table = 'curadorias';
 
     protected $fillable = [
+        'coleta_id',
         'bem_material_id',
-        'curador_id',
+        'usuario_id',
         'status',
+        'acao_resultante',
+        'data_avaliacao',
         'observacao',
-        'data_revisao',
     ];
 
-    protected $casts = [
-        'data_revisao' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'data_avaliacao' => 'datetime',
+        ];
+    }
+
+    public function coleta(): BelongsTo
+    {
+        return $this->belongsTo(Coleta::class);
+    }
 
     public function bemMaterial(): BelongsTo
     {
