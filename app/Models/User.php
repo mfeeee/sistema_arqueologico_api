@@ -16,8 +16,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'perfil' => PerfilUsuario::class,
-        'classificacao' => ClassificacaoUsuario::class,
+        'perfil',
+        'classificacao',
         'ativo',
     ];
 
@@ -27,6 +27,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'ativo' => 'boolean',
+            'perfil' => PerfilUsuario::class,
+            'classificacao' => ClassificacaoUsuario::class,
         ];
     }
 

@@ -15,10 +15,17 @@ class MidiaLink extends Model
 
     protected $fillable = [
         'bem_material_id',
-        'tipo' => TipoMidia::class,
+        'tipo',
         'url',
         'descricao',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'tipo' => TipoMidia::class,
+        ];
+    }
 
     public function bemMaterial(): BelongsTo
     {

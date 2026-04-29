@@ -19,8 +19,8 @@ class Curadoria extends Model
         'coleta_id',
         'bem_material_id',
         'usuario_id',
-        'status' => StatusCuradoria::class,
-        'acao_resultante' => AcaoResultanteCuradoria::class,
+        'status',
+        'acao_resultante',
         'data_avaliacao',
         'observacao',
     ];
@@ -29,6 +29,8 @@ class Curadoria extends Model
     {
         return [
             'data_avaliacao' => 'datetime',
+            'status' => StatusCuradoria::class,
+            'acao_resultante' => AcaoResultanteCuradoria::class,
         ];
     }
 
