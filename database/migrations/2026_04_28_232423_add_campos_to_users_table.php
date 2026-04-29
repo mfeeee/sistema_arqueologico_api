@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             //
-            $table->uuid('id');
             $table->enum('perfil', ['coletor', 'curador', 'admin'])->default('coletor');
             $table->enum('classificacao', ['estudante', 'professor', 'arqueologo'])->nullable();
             $table->boolean('ativo')->default(true);
