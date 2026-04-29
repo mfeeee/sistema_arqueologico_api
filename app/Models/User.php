@@ -2,29 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Enums\PerfilUsuario;
+use App\Enums\ClassificacaoUsuario;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasUuids, Notifiable;
+    use Notifiable;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'perfil',
-        'classificacao',
+        'perfil' => PerfilUsuario::class,
+        'classificacao' => ClassificacaoUsuario::class,
         'ativo',
-    ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
@@ -36,18 +30,18 @@ class User extends Authenticatable
         ];
     }
 
-    public function isAdmin(): bool
+    public function coletas(): HasMany
     {
-        return $this->perfil === 'admin';
+        return $this->hasMany(Coleta::class, 'usuario_id');
     }
 
-    public function isCurador(): bool
+    public function curadorias(): HasMany
     {
-        return $this->perfil === 'curador';
+        return $this->hasMany(Curadoria::class, 'usuario_id');
     }
 
-    public function isColetor(): bool
+    public function auditorias(): HasMany
     {
-        return $this->perfil === 'coletor';
+        return $this->hasMany(Auditoria::class, 'usuario_id');
     }
 }
