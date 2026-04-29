@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Concerns\HasAuditoria;
+use App\Enums\ArtefatoBem;
+use App\Enums\TipoBem;
+use App\Enums\NaturezaBem;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,9 +23,9 @@ class BemMaterial extends Model
         'codigo_iphan',
         'nome_bem',
         'nomes_populares',
-        'natureza',
-        'tipo',
-        'artefatos',
+        'natureza' => NaturezaBem::class,
+        'tipo' => TipoBem::class,
+        'artefatos' => ArtefatoBem::class,
         'meios_acesso',
         'publicado',
         'uf',
