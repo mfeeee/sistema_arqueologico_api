@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -14,29 +15,30 @@ return new class extends Migration
         Schema::create('bens_materiais', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('coleta_uuid')->nullable()->constrained('coletas');
-            $table->text('codigo_iphan')->nullable();
-            $table->text('nome_bem');
-            $table->text('nomes_populares');
-            $table->enum('natureza', ['bemArqueologico', 'bemPaleontologico']);
-            $table->enum('tipo', ['acervoOuColecao', 'bemOuConjunto', 'colecao', 'sitio']);
-            $table->enum('artefatos', [
-                'fainca', 'malacologico', 'semente', 'ossosFaunisticos', 'ceramica', 
-                'plastico', 'gres', 'carvao', 'faincaFina', 'madeira', 'porcelana', 
-                'textil', 'litico', 'fibraVegetal', 'vitreo', 'borracha', 'sedimento', 
-                'ceramicaVidrada', 'metalico', 'ossosHumanos', 'outros'
-            ]);
-            $table->text('meios_acesso');
+            $table->string('codigo_iphan')->nullable();
+            $table->string('nome_bem');
+            $table->string('nomes_populares')->nullable();
+            $table->string('natureza');
+            $table->string('tipo');
+            $table->json('artefatos');
+            $table->string('meios_acesso');
             $table->boolean('publicado')->default(false);
-            $table->text('uf');
-            $table->text('municipio');
-            $table->text('cep');
-            $table->text('endereco');
-            $table->double('latitude');
-            $table->double('longitude');
-            $table->geometry('geom')->nullable();
-            $table->timestamp('deletado_em')->nullable();
+            $table->char('uf', 2)->nullable();
+            $table->string('municipio')->nullable();
+            $table->string('cep')->nullable();
+            $table->string('endereco')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->json('geojson')->nullable();
+            $table->integer('ano_registro')->nullable();
+            $table->text('descricao_atualizacao')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
+
+        DB::statement('ALTER TABLE bens_materiais ADD COLUMN geom geometry(Geometry, 4326) NULL');
+        
+        DB::statement('CREATE INDEX bens_materiais_geom_gist ON bens_materiais USING GIST (geom)');
     }
 
     /**
@@ -44,6 +46,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::hasTable('bens_materiais')) {
+            DB::statement('DROP INDEX IF EXISTS bens_materiais_geom_gist');
+            DB::statement('ALTER TABLE bens_materiais DROP COLUMN IF EXISTS geom');
+        }
         Schema::dropIfExists('bens_materiais');
     }
 };
