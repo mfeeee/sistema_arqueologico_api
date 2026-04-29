@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement('CREATE EXTENSION IF NOT EXISTS postgis');
+
         Schema::create('bens_materiais', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('coleta_uuid')->nullable()->constrained('coletas');
@@ -46,10 +48,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (Schema::hasTable('bens_materiais')) {
-            DB::statement('DROP INDEX IF EXISTS bens_materiais_geom_gist');
-            DB::statement('ALTER TABLE bens_materiais DROP COLUMN IF EXISTS geom');
-        }
         Schema::dropIfExists('bens_materiais');
     }
 };
