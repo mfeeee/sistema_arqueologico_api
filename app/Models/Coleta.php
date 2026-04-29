@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Enums\NaturezaBem;
+use App\Enums\TipoBem;
+use App\Enums\StatusColeta;
 
 class Coleta extends Model
 {
@@ -19,9 +22,9 @@ class Coleta extends Model
         'latitude',
         'longitude',
         'nome_bem',
-        'natureza_bem',
-        'tipo_bem',
-        'status_sync',
+        'natureza_bem' => NaturezaBem::class,
+        'tipo_bem' => TipoBem::class,
+        'status_sync' => StatusColeta::class,
         'versao',
         'dados_coletados',
         'deletado_em',
