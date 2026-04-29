@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\AcaoResultanteCuradoria;
+use App\Enums\StatusCuradoria;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,8 +19,8 @@ class Curadoria extends Model
         'coleta_id',
         'bem_material_id',
         'usuario_id',
-        'status',
-        'acao_resultante',
+        'status' => StatusCuradoria::class,
+        'acao_resultante' => AcaoResultanteCuradoria::class,
         'data_avaliacao',
         'observacao',
     ];
