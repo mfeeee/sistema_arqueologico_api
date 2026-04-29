@@ -24,11 +24,14 @@ class Auditoria extends Model
         'valor_novo',
     ];
 
-    protected $casts = [
-        'data_hora' => 'datetime',
-        'valor_anterior' => 'array',
-        'valor_novo' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'data_hora' => 'datetime',
+            'valor_anterior' => 'array',
+            'valor_novo' => 'array',
+        ];
+    }
 
     public function usuario(): BelongsTo
     {
