@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('coletas', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('usuario_uuid')->constrained('users');
+            $table->foreignUuid('usuario_id')->constrained('users');
             $table->timestamp('data_coleta');
             $table->double('latitude');
             $table->double('longitude');
-            $table->text('nome_bem');
-            $table->enum('natureza_bem', ['bemArqueologico', 'bemPaleontologico']);
-            $table->enum('tipo_bem', ['acervoOuColecao', 'bemOuConjunto', 'colecao', 'sitio']);
-            $table->enum('status_sync', ['pendente', 'sincronizado', 'conflito'])->default('pendente');
+            $table->string('nome_bem');
+            $table->string('natureza_bem', 30);
+            $table->string('tipo_bem', 30);
+            $table->string('status_sync', 20)->default('pendente');
+            $table->char('uf', 2)->nullable();
             $table->integer('versao')->default(1);
             $table->jsonb('dados_coletados');
             $table->timestamp('deletado_em')->nullable();

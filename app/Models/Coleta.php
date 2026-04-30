@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ArtefatoBem;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,7 @@ class Coleta extends Model
         'nome_bem',
         'natureza_bem',
         'tipo_bem',
+        'artefatos',
         'status_sync',
         'versao',
         'dados_coletados',
@@ -36,6 +38,7 @@ class Coleta extends Model
         'longitude' => 'float',
         'natureza_bem' => NaturezaBem::class,
         'tipo_bem' => TipoBem::class,
+        'arefatos' => ArtefatoBem::class,
         'status_sync' => StatusColeta::class,
         'versao' => 'integer',
         'dados_coletados' => 'array',
