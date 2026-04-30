@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignUuid('bem_material_id')->constrained('bens_materiais')->onDelete('cascade');
             $table->string('contato_nome');
             $table->string('contato_email');
-            $table->string('contato_telefone');
+            $table->string('contato_telefone', 20);
             $table->timestamps();
         });
     }
