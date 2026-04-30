@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('auditorias', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('usuario_id')->constrained('users');
-            $table->string('entidade_tipo');
-            $table->uuid('entidade_id');
+            $table->string('entidade_tipo', 60);
+            $table->string('entidade_id', 36);
             $table->foreignUuid('curadoria_id')->nullable()->constrained('curadorias');
-            $table->enum('operacao', ['alteracao', 'insercao', 'exclusao']);
-            $table->enum('meio', ['manual', 'app_sync']);
+            $table->string('operacao', 30);
+            $table->string('meio', 30);
             $table->timestamp('data_hora')->useCurrent();
             $table->jsonb('valor_anterior')->nullable();
             $table->jsonb('valor_novo')->nullable();
