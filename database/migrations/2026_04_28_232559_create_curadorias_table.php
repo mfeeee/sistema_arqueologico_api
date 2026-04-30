@@ -16,8 +16,8 @@ return new class extends Migration
             $table->foreignUuid('coleta_id')->constrained('coletas');
             $table->foreignUuid('bem_material_id')->nullable()->constrained('bens_materiais');
             $table->foreignUuid('usuario_id')->constrained('users');
-            $table->enum('status', ['pendente', 'aprovado', 'rejeitado'])->default('pendente');
-            $table->enum('acao_resultante', ['criarSitio', 'atualizarSitio', 'rejeitar'])->nullable();
+            $table->string('status', 20)->default('pendente');
+            $table->string('acao_resultante', 30)->nullable();
             $table->timestamp('data_avaliacao')->nullable();
             $table->text('observacao')->nullable();
             $table->timestamps();
