@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('nomes_populares')->nullable();
             $table->string('natureza');
             $table->string('tipo');
-            $table->json('artefatos');
+            $table->jsonb('artefatos');
             $table->string('meios_acesso');
             $table->boolean('publicado')->default(false);
             $table->char('uf', 2)->nullable();
