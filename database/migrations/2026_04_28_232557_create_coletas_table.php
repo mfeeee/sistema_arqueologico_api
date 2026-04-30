@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('nome_bem');
             $table->string('natureza_bem', 30);
             $table->string('tipo_bem', 30);
+            $table->jsonb('artefatos')->default('[]');
             $table->string('status_sync', 20)->default('pendente');
             $table->char('uf', 2)->nullable();
             $table->integer('versao')->default(1);
