@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('midias_links', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->foreignUuid('bem_material_id')->constrained('bens_materiais')->onDelete('cascade');
-            $table->enum('tipo', ['imagem', 'video', 'tese', 'artigo']);
-            $table->string('url');
-            $table->string('descricao')->nullable();
+            $table->string('tipo', 20);
+            $table->text('url');
+            $table->text('descricao')->nullable();
             $table->timestamps();
         });
     }
