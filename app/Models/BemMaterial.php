@@ -45,7 +45,7 @@ class BemMaterial extends Model
         'geojson' => 'array',
         'natureza' => NaturezaBem::class,
         'tipo' => TipoBem::class,
-        'artefatos' => ArtefatoBem::class,
+        'artefatos' => 'array',
         'publicado' => 'boolean',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
@@ -85,9 +85,15 @@ class BemMaterial extends Model
     {
         $raioMetros = $raioKm * 1000;
 
-        return $query->whereRaw(
-            'ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)',
-            [$lng, $lat, $raioMetros]
-        );
+        return $query->whereNotNull('geom')
+            ->whereRaw(
+                'ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, ?)',
+                [$lng, $lat, $raioMetros]
+            )
+            ->selectRaw(
+                '*, ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography) AS distancia_metros',
+                [$lng, $lat]
+            )
+            ->orderBy('distancia_metros');
     }
 }

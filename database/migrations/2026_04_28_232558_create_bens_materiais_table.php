@@ -16,13 +16,13 @@ return new class extends Migration
 
         Schema::create('bens_materiais', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('coleta_uuid')->nullable()->constrained('coletas');
+            $table->foreignUuid('coleta_id')->nullable()->constrained('coletas');
             $table->string('codigo_iphan')->nullable();
             $table->string('nome_bem');
             $table->string('nomes_populares')->nullable();
             $table->string('natureza');
             $table->string('tipo');
-            $table->jsonb('artefatos');
+            $table->jsonb('artefatos')->default('[]');
             $table->string('meios_acesso');
             $table->boolean('publicado')->default(false);
             $table->char('uf', 2)->nullable();
