@@ -150,39 +150,206 @@ A API estará disponível em **http://localhost:8000/api**.
 
 ## Endpoints da API
 
-Todos os endpoints (exceto autenticação) exigem o header `Authorization: Bearer {token}`.
+Todos os endpoints protegidos exigem o header:
 
 ```
-POST   /api/auth/login
-POST   /api/auth/logout
-GET    /api/auth/me
-
-GET    /api/coletas
-POST   /api/coletas
-GET    /api/coletas/{id}
-PUT    /api/coletas/{id}
-DELETE /api/coletas/{id}
-
-POST   /api/sync                        # Sincronização batch (mobile offline)
-
-GET    /api/bens-materiais/nearby       # Busca por proximidade geográfica
-GET    /api/bens-materiais
-POST   /api/bens-materiais
-GET    /api/bens-materiais/{id}
-PUT    /api/bens-materiais/{id}
-DELETE /api/bens-materiais/{id}
-
-GET    /api/curadorias
-PATCH  /api/curadorias/{id}/avaliar
-
-GET    /api/auditorias                  # Somente administradores
+Authorization: Bearer {token}
 ```
+
+### Auth (pública)
+
+| Método | Endpoint | Autenticação | Descrição |
+|---|---|---|---|
+| `POST` | `/api/v1/auth/login` | — | Login e emissão de token Sanctum |
+| `POST` | `/api/v1/auth/logout` | `auth:sanctum` | Revoga o token atual |
+| `GET` | `/api/v1/auth/me` | `auth:sanctum` | Retorna dados do usuário autenticado |
+
+**Body — `POST /api/v1/auth/login`**
+
+```json
+{
+  "email": "usuario@exemplo.com",   // obrigatório
+  "password": "senha"               // obrigatório
+}
+```
+
+***
+
+### Mobile — `v1/mobile` · `[auth:sanctum]`
+
+#### Coletas
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/mobile/coletas` | Lista coletas do usuário autenticado (paginado) |
+| `POST` | `/api/v1/mobile/coletas` | Registra nova coleta |
+| `GET` | `/api/v1/mobile/coletas/{id}` | Detalha uma coleta |
+| `PUT` | `/api/v1/mobile/coletas/{id}` | Atualiza uma coleta |
+| `DELETE` | `/api/v1/mobile/coletas/{id}` | Remove uma coleta (soft delete) |
+
+**Body — `POST /api/v1/mobile/coletas`**
+
+```json
+{
+  "data_coleta": "2026-05-04",      // obrigatório
+  "nome_bem": "Fragmento cerâmico", // obrigatório
+  "latitude": -5.0921,              // obrigatório
+  "longitude": -42.8016,            // obrigatório
+  "natureza": "ceramica",           // opcional
+  "tipo": "superficie",             // opcional
+  "uf": "MA",                       // opcional
+  "artefatos": [],                  // opcional (array)
+  "dados_coletados": {},            // opcional (objeto)
+  "versao": 1                       // opcional (padrão: 1)
+}
+```
+
+#### Bens Materiais
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/mobile/bens-materiais` | Lista bens materiais publicados (paginado) |
+| `GET` | `/api/v1/mobile/bens-materiais/nearby` | Busca por proximidade geográfica |
+| `POST` | `/api/v1/mobile/bens-materiais` | Cadastra novo bem material |
+| `GET` | `/api/v1/mobile/bens-materiais/{id}` | Detalha um bem material |
+| `PUT` | `/api/v1/mobile/bens-materiais/{id}` | Atualiza um bem material |
+| `DELETE` | `/api/v1/mobile/bens-materiais/{id}` | Remove um bem material (soft delete) |
+
+**Query params — `GET /api/v1/mobile/bens-materiais/nearby`**
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `latitude` | `numeric` | ✅ | Latitude entre -90 e 90 |
+| `longitude` | `numeric` | ✅ | Longitude entre -180 e 180 |
+| `raio_km` | `numeric` | ❌ | Raio de busca em km (padrão: 5, máx: 100) |
+
+**Query params — `GET /api/v1/mobile/bens-materiais`**
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `uf` | `string` | ❌ | Filtra por UF (ex: `MA`) |
+| `tipo` | `string` | ❌ | Filtra por tipo de bem |
+
+#### Sincronização
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `POST` | `/api/v1/mobile/sync` | Envia lote de coletas offline para processamento assíncrono |
+
+**Body — `POST /api/v1/mobile/sync`**
+
+```json
+{
+  "coletas": [                      // obrigatório (array)
+    {
+      "data_coleta": "2026-05-01",
+      "nome_bem": "Lasca lítica",
+      "latitude": -5.1002,
+      "longitude": -42.8100
+    }
+  ]
+}
+```
+
+**Resposta `202 Accepted`:**
+
+```json
+{
+  "message": "Sincronização recebida e enfileirada.",
+  "total_itens": 3
+}
+```
+
+***
+
+### Admin — `v1/admin` · `[auth:sanctum + perfil: admin ou curador]`
+
+#### Curadorias
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/admin/curadorias` | Lista curadorias pendentes (paginado) |
+| `PATCH` | `/api/v1/admin/curadorias/{id}/avaliar` | Avalia uma curadoria |
+
+**Body — `PATCH /api/v1/admin/curadorias/{id}/avaliar`**
+
+```json
+{
+  "status": "aprovado",                      // obrigatório
+  "acao_resultante": "criar_sitio",          // obrigatório: criar_sitio | atualizar_sitio | rejeitar
+  "bem_material_id": "uuid-do-bem",          // obrigatório se acao_resultante = atualizar_sitio
+  "observacao": "Registro validado."         // opcional
+}
+```
+
+#### Auditorias
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/admin/auditorias` | Lista registros de auditoria (paginado, 50/página) |
+
+**Query params — `GET /api/v1/admin/auditorias`**
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `entidade_tipo` | `string` | ❌ | Filtra por tipo de entidade auditada |
+| `usuario_id` | `uuid` | ❌ | Filtra por usuário que realizou a ação |
+
+***
+
+## Formato padrão de resposta
+
+Todas as respostas seguem o envelope `data` / `meta`:
+
+```json
+// Lista paginada
+{
+  "data": [...],
+  "meta": {
+    "total": 45,
+    "page": 1,
+    "pages": 3
+  }
+}
+
+// Item único
+{
+  "data": { ... }
+}
+
+// Erro
+{
+  "message": "Recurso não encontrado."
+}
+```
+
+***
+
+## Perfis de Usuário
+
+| Perfil | Acesso Mobile (`v1/mobile`) | Acesso Admin (`v1/admin`) |
+|---|---|---|
+| `coletor` | ✅ Total | ❌ Bloqueado |
+| `curador` | ✅ Total | ✅ Curadorias e Auditorias |
+| `admin` | ✅ Total | ✅ Total |
+
+***
+
+## Usuários de Teste (Seeders)
+
+Após rodar `make seed`, os seguintes usuários estarão disponíveis:
+
+| E-mail | Senha | Perfil |
+|---|---|---|
+| `admin@arqueologia.test` | `password` | admin |
+| `curador@arqueologia.test` | `password` | curador |
+| `coletor@arqueologia.test` | `password` | coletor |
 
 ---
 
 ## Conexão com o Aplicativo Móvel
 
-O repositório **[sistema_coleta_arqueologica](https://github.com/mfeeee/sistema_coleta_arqueologica)** (Flutter) depende diretamente desta API para funcionar. O aplicativo utiliza os tokens Sanctum para autenticação e o endpoint `/api/sync` para envio em lote dos dados coletados offline em campo.
+O repositório **[sistema_coleta_arqueologica](https://github.com/mfeeee/sistema_coleta_arqueologica)** (Flutter) depende diretamente desta API para funcionar. O aplicativo utiliza os tokens Sanctum para autenticação e o endpoint `/api/v1/mobile/sync` para envio em lote dos dados coletados offline em campo.
 
 **Configuração no app mobile:**
 
@@ -200,7 +367,8 @@ API_BASE_URL=http://<seu-ip-ou-dominio>:8000/api
 
 - **Laravel Sanctum**: emissão de tokens de acesso pessoal para a autenticação da API mobile.
 - **Laravel Fortify**: autenticação do painel administrativo web com suporte a **autenticação de dois fatores (2FA)** via TOTP.
-- Todas as rotas de escrita são protegidas pelo middleware `auth:sanctum`.
+- Middleware `CheckRole` verifica o campo `perfil` do usuário antes de acessar rotas admin.
+- Todas as rotas protegidas retornam `401 Unauthorized` sem token e `403 Forbidden` sem perfil adequado.
 - O módulo de auditoria registra automaticamente ações sensíveis para rastreabilidade.
 
 ---
