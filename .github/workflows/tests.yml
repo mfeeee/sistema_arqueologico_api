@@ -39,6 +39,7 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: pdo, pdo_pgsql, pgsql, redis, pcntl
           tools: composer:v2
+          ini-values: opcache.enable_cli=0, memory_limit=-1
           coverage: none
 
       - name: Setup Node
