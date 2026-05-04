@@ -1,8 +1,13 @@
+.PHONY: up down build restart shell logs migrate fresh seed test key
+
 up:
-	docker compose up -d --build
+	docker compose up -d
 
 down:
 	docker compose down
+
+build:
+	docker compose build --no-cache
 
 stop:
 	docker compose stop
@@ -33,3 +38,12 @@ queue:
 
 logs:
 	docker compose logs -f
+
+shell:
+	docker compose exec app bash
+
+seed:
+	docker compose exec app php artisan db:seed
+
+setup: up install key migrate
+	@echo "API em http://localhost:8000"
