@@ -23,16 +23,26 @@ class ColetaController extends Controller
 
     public function store(StoreColetaRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+
         $coleta = Coleta::create([
-            ...$request->validated(),
             'usuario_id' => $request->user()->id,
-            'status_sincronizacao' => 'sincronizado',
+            'data_coleta' => $validated['data_coleta'],
+            'nome_bem' => $validated['nome_bem'],
+            'latitude' => $validated['latitude'],
+            'longitude' => $validated['longitude'],
+            'natureza_bem' => $validated['natureza'] ?? null,
+            'tipo_bem' => $validated['tipo'] ?? null,
+            'uf' => $validated['uf'] ?? null,
+            'artefatos' => $validated['artefatos'] ?? [],
+            'versao' => $validated['versao'] ?? 1,
+            'dados_coletados' => $validated['dados_coletados'] ?? [],
         ]);
 
         return response()->json($coleta, 201);
     }
 
-    public function show(Request $request, Coleta $coleta): JsonResponse
+    public function show(Coleta $coleta): JsonResponse
     {
         $this->authorize('view', $coleta);
 
@@ -48,7 +58,7 @@ class ColetaController extends Controller
         return response()->json($coleta);
     }
 
-    public function destroy(Request $request, Coleta $coleta): JsonResponse
+    public function destroy(Coleta $coleta): JsonResponse
     {
         $this->authorize('delete', $coleta);
 
