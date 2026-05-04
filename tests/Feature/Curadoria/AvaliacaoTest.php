@@ -37,7 +37,7 @@ class AvaliacaoTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->curador)
-            ->patchJson("/api/curadorias/{$curadoria->id}/avaliar", [
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
                 'observacao' => 'Sítio validado em campo.',
@@ -70,7 +70,7 @@ class AvaliacaoTest extends TestCase
         ]);
 
         $this->actingAs($this->coletor)
-            ->patchJson("/api/curadorias/{$curadoria->id}/avaliar", [
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
             ])
@@ -87,7 +87,7 @@ class AvaliacaoTest extends TestCase
         ]);
 
         $this->actingAs($this->curador)
-            ->patchJson("/api/curadorias/{$curadoria->id}/avaliar", [
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::REJEITADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::REJEITAR->value,
                 'observacao' => 'Dados insuficientes.',
