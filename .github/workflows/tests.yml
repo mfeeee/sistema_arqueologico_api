@@ -14,20 +14,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Prepare Environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-          php artisan config:clear
-
       - name: Start Docker Containers
         run: docker compose up -d --build
+        
+      - name: Prepare Environment
+        run: docker compose exec -T app sh -c "cp .env.example .env"
 
       - name: Install PHP Dependencies (Inside Container)
         run: docker compose exec -T app composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Generate App Key
         run: docker compose exec -T app php artisan key:generate
+
+      - name: Clear Config Cache
+        run: docker compose exec -T app php artisan config:clear
 
       - name: Setup PHP on Host
         uses: shivammathur/setup-php@v2
@@ -40,10 +40,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install Node Dependencies & Build Assets
-        run: |
-          npm ci
-          npm run build
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Build Assets
+        run: npm run build
 
       - name: Run Tests (Inside Container)
         run: docker compose exec -T app php artisan test
