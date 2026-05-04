@@ -10,93 +10,31 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgis/postgis:16-3.4-alpine
-        env:
-          POSTGRES_DB: sistema_arqueologico_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    strategy:
-      matrix:
-        php-version: ['8.4']
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php-version }}
-          extensions: pdo, pdo_pgsql, pgsql, redis, pcntl
-          tools: composer:v2
-          ini-values: opcache.enable_cli=0, memory_limit=-1
-          coverage: none
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Install Node Dependencies
-        run: npm ci
+      - name: Install Node Dependencies & Build Assets
+        run: |
+          npm ci
+          npm run build
 
-      - name: Install PHP Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
-      - name: Copy .env base 
+      - name: Prepare Environment
         run: cp .env.example .env
 
-      - name: Gerar APP_KEY
-        run: php artisan key:generate --show > /tmp/app_key.txt
+      - name: Start Docker Containers
+        run: docker compose up -d --build
 
-      - name: Criar .env.testing para o CI
-        run: |
-          APP_KEY=$(cat /tmp/app_key.txt)
-          cat > .env.testing <<EOF
-          APP_NAME="Sistema Arqueologico API"
-          APP_ENV=testing
-          APP_DEBUG=true
-          APP_KEY=${APP_KEY}
+      - name: Install PHP Dependencies (Inside Container)
+        run: docker compose exec -T app composer install --no-interaction --prefer-dist --optimize-autoloader
 
-          DB_CONNECTION=pgsql
-          DB_HOST=127.0.0.1
-          DB_PORT=5432
-          DB_DATABASE=sistema_arqueologico_test
-          DB_USERNAME=postgres
-          DB_PASSWORD=postgres
+      - name: Generate App Key
+        run: docker compose exec -T app php artisan key:generate
 
-          CACHE_STORE=array
-          SESSION_DRIVER=array
-          QUEUE_CONNECTION=sync
-          MAIL_MAILER=array
-          BROADCAST_CONNECTION=log
-
-          REDIS_HOST=127.0.0.1
-          REDIS_PASSWORD=null
-          REDIS_PORT=6379
-
-          PULSE_ENABLED=false
-          TELESCOPE_ENABLED=false
-          NIGHTWATCH_ENABLED=false
-          EOF
-
-      - name: Build Assets
-        run: npm run build
-
-      - name: Enable PostGIS extension
-        run: |
-          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d sistema_arqueologico_test \
-            -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-
-      - name: Run Tests
-        run: ./vendor/bin/phpunit
+      - name: Run Tests (Inside Container)
+        run: docker compose exec -T app php artisan test
