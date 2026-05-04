@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BemMaterialController;
 use App\Http\Controllers\ColetaController;
+use App\Http\Controllers\CuradoriaController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -21,5 +22,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Bens Materiais
     Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
     Route::apiResource('bens-materiais', BemMaterialController::class);
+
+    // Curadorias
+    Route::get('curadorias', [CuradoriaController::class, 'index']);
+    Route::patch('curadorias/{curadoria}/avaliar', [CuradoriaController::class, 'avaliar']);
 
 });
