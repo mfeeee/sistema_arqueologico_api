@@ -3,24 +3,23 @@
 namespace App\Models;
 
 use App\Concerns\HasAuditoria;
-use App\Enums\ArtefatoBem;
-use App\Enums\TipoBem;
 use App\Enums\NaturezaBem;
+use App\Enums\TipoBem;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class BemMaterial extends Model
 {
-    use HasAuditoria, HasUuids, HasFactory;
+    use HasAuditoria, HasFactory, HasUuids;
 
     protected $table = 'bens_materiais';
 
     protected $fillable = [
-        'coleta_uuid',
+        'coleta_id',
         'codigo_iphan',
         'nome_bem',
         'nomes_populares',
@@ -56,7 +55,7 @@ class BemMaterial extends Model
 
     public function coleta(): BelongsTo
     {
-        return $this->belongsTo(Coleta::class, 'coleta_uuid');
+        return $this->belongsTo(Coleta::class, 'coleta_id');
     }
 
     public function midias(): HasMany
