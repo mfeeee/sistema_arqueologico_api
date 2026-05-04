@@ -35,7 +35,7 @@ class SincronizacaoTest extends TestCase
         ];
 
         $this->actingAs($user)
-            ->postJson('/api/sync', $payload)
+            ->postJson('/api/v1/mobile/sync', $payload)
             ->assertStatus(202)
             ->assertJsonFragment(['total_itens' => 1]);
 
@@ -44,7 +44,7 @@ class SincronizacaoTest extends TestCase
 
     public function test_sync_falha_sem_autenticacao(): void
     {
-        $this->postJson('/api/sync', ['coletas' => []])
+        $this->postJson('/api/v1/mobile/sync', ['coletas' => []])
             ->assertStatus(401);
     }
 
@@ -54,7 +54,7 @@ class SincronizacaoTest extends TestCase
 
         // latitude fora do range
         $this->actingAs($user)
-            ->postJson('/api/sync', [
+            ->postJson('/api/v1/mobile/sync', [
                 'coletas' => [[
                     'id' => fake()->uuid(),
                     'data_coleta' => '2026-05-01',
