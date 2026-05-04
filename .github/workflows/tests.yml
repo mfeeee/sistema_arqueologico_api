@@ -15,7 +15,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Environment
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan config:clear
 
       - name: Start Docker Containers
         run: docker compose up -d --build
