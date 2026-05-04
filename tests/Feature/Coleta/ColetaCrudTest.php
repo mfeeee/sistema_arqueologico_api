@@ -28,7 +28,7 @@ class ColetaCrudTest extends TestCase
     public function test_coletor_pode_criar_coleta(): void
     {
         $response = $this->actingAs($this->coletor)
-            ->postJson('/api/coletas', [
+            ->postJson('/api/v1/mobile/coletas', [
                 'data_coleta' => '2026-05-01 10:00:00',
                 'nome_bem' => 'Sítio Teste',
                 'latitude' => -5.0892,
@@ -52,7 +52,7 @@ class ColetaCrudTest extends TestCase
         $coleta = Coleta::factory()->create(['usuario_id' => $outro->id]);
 
         $this->actingAs($this->coletor)
-            ->getJson("/api/coletas/{$coleta->id}")
+            ->getJson("/api/v1/mobile/coletas/{$coleta->id}")
             ->assertStatus(403);
     }
 
@@ -61,7 +61,7 @@ class ColetaCrudTest extends TestCase
         Coleta::factory()->count(3)->create(['usuario_id' => $this->coletor->id]);
 
         $this->actingAs($this->coletor)
-            ->getJson('/api/coletas')
+            ->getJson('/api/v1/mobile/coletas')
             ->assertStatus(200)
             ->assertJsonCount(3, 'data');
     }
@@ -74,7 +74,7 @@ class ColetaCrudTest extends TestCase
         ]);
 
         $this->actingAs($this->coletor)
-            ->getJson('/api/coletas')
+            ->getJson('/api/v1/mobile/coletas')
             ->assertJsonMissing(['id' => $coleta->id]);
     }
 }
