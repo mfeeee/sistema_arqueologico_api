@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BemMaterialController;
 use App\Http\Controllers\ColetaController;
@@ -31,4 +32,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('curadorias', [CuradoriaController::class, 'index']);
     Route::patch('curadorias/{curadoria}/avaliar', [CuradoriaController::class, 'avaliar']);
 
+    // Auditorias (admin)
+    Route::get('auditorias', [AuditoriaController::class, 'index']);
 });
