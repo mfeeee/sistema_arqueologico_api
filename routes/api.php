@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BemMaterialController;
 use App\Http\Controllers\ColetaController;
 use App\Http\Controllers\CuradoriaController;
+use App\Http\Controllers\SincronizacaoController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -18,6 +19,9 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     // Coletas
     Route::apiResource('coletas', ColetaController::class);
+
+    // Sincronização batch (mobile offline)
+    Route::post('sync', [SincronizacaoController::class, 'sincronizar']);
 
     // Bens Materiais
     Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
