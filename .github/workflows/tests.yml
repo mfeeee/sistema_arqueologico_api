@@ -24,7 +24,9 @@ jobs:
         run: docker compose exec -T app composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Generate App Key
-        run: docker compose exec -T app php artisan key:generate
+        run: |
+          docker compose exec -T app php artisan key:generate
+          docker compose exec -T app php artisan key:generate --env=testing
 
       - name: Clear Config Cache
         run: docker compose exec -T app php artisan config:clear
