@@ -2,22 +2,23 @@
 
 namespace App\Models;
 
+use App\Enums\NaturezaBem;
+use App\Enums\StatusColeta;
+use App\Enums\TipoBem;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use App\Enums\NaturezaBem;
-use App\Enums\TipoBem;
-use App\Enums\StatusColeta;
 
 class Coleta extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     protected $table = 'coletas';
 
     protected $fillable = [
-        'usuario_uuid',
+        'usuario_id',
         'data_coleta',
         'latitude',
         'longitude',
@@ -26,6 +27,7 @@ class Coleta extends Model
         'tipo_bem',
         'artefatos',
         'status_sync',
+        'uf',
         'versao',
         'dados_coletados',
         'deletado_em',
@@ -46,7 +48,7 @@ class Coleta extends Model
 
     public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'usuario_uuid');
+        return $this->belongsTo(User::class, 'usuario_id');
     }
 
     public function bemMaterial(): HasOne
@@ -54,8 +56,8 @@ class Coleta extends Model
         return $this->hasOne(BemMaterial::class, 'coleta_uuid');
     }
 
-    public function scopeDoUsuario($query, string $usuarioUuid)
+    public function scopeDoUsuario($query, string $usuarioId): mixed
     {
-        return $query->where('usuario_uuid', $usuarioUuid);
+        return $query->where('usuario_id', $usuarioId);
     }
 }
