@@ -1,37 +1,35 @@
 FROM php:8.4-fpm
 
-ARG user=www-data
-ARG uid=1000
-
 RUN apt-get update && apt-get install -y \
-    git \
+    bash \
     curl \
+    git \
     unzip \
     zip \
     libpq-dev \
     libzip-dev \
-    libicu-dev \
     libonig-dev \
+    libicu-dev \
     libxml2-dev \
     libpng-dev \
     libjpeg62-turbo-dev \
     libfreetype6-dev \
-    libcurl4-openssl-dev \
-    libssl-dev \
     pkg-config \
-    libmagickwand-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    autoconf \
+    gcc \
+    g++ \
+    make \
+    libc-dev \
     && docker-php-ext-install \
         pdo \
         pdo_pgsql \
         pgsql \
-        bcmath \
-        intl \
-        mbstring \
         zip \
-        exif \
+        mbstring \
+        intl \
+        bcmath \
         pcntl \
-        gd \
+        opcache \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get clean \
@@ -39,8 +37,10 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
+WORKDIR /var/www/html
 
-WORKDIR /var/www
+RUN usermod -u 1000 www-data || true
+RUN groupmod -g 1000 www-data || true
 
-RUN usermod -u ${uid} ${user} || true
+EXPOSE 9000
+CMD ["php-fpm"]
