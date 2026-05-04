@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class BemMaterial extends Model
 {
-    use HasAuditoria, HasUuids;
+    use HasAuditoria, HasUuids, HasFactory;
 
     protected $table = 'bens_materiais';
 
@@ -61,6 +62,11 @@ class BemMaterial extends Model
     public function midias(): HasMany
     {
         return $this->hasMany(MidiaLink::class, 'bem_material_id');
+    }
+
+    public function responsavel(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsavel_id');
     }
 
     public function responsaveis(): HasMany
