@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Mobile;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Coleta\StoreColetaRequest;
 use App\Models\Coleta;
 use Illuminate\Http\JsonResponse;

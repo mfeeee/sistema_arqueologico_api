@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\StatusColeta;
 use App\Http\Requests\Curadoria\AvaliarCuradoriaRequest;
