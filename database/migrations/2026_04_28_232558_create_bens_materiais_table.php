@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -20,10 +20,10 @@ return new class extends Migration
             $table->string('codigo_iphan')->nullable();
             $table->string('nome_bem');
             $table->string('nomes_populares')->nullable();
-            $table->string('natureza');
-            $table->string('tipo');
+            $table->string('natureza')->nullable();
+            $table->string('tipo')->nullable();
             $table->jsonb('artefatos')->default('[]');
-            $table->string('meios_acesso');
+            $table->string('meios_acesso')->nullable();
             $table->boolean('publicado')->default(false);
             $table->char('uf', 2)->nullable();
             $table->string('municipio')->nullable();
@@ -39,7 +39,7 @@ return new class extends Migration
         });
 
         DB::statement('ALTER TABLE bens_materiais ADD COLUMN geom geometry(Geometry, 4326) NULL');
-        
+
         DB::statement('CREATE INDEX bens_materiais_geom_gist ON bens_materiais USING GIST (geom)');
     }
 
