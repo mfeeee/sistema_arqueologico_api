@@ -1,5 +1,8 @@
 {
     "php": {
         "version": "8.4"
+    },
+    "deploy": {
+        "startCommand": "php artisan migrate --seed --force && frankenphp run --config /etc/caddy/Caddyfile"
     }
 }
