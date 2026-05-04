@@ -47,7 +47,7 @@ class NearbyTest extends TestCase
         );
 
         $response = $this->actingAs($this->user)
-            ->getJson('/api/bens-materiais/nearby?latitude=-5.0892&longitude=-42.8016&raio_km=5');
+            ->getJson('/api/v1/mobile/bens-materiais/nearby?latitude=-5.0892&longitude=-42.8016&raio_km=5');
 
         $response->assertStatus(200)
             ->assertJsonCount(1)
@@ -57,7 +57,7 @@ class NearbyTest extends TestCase
     public function test_nearby_exige_latitude_e_longitude(): void
     {
         $this->actingAs($this->user)
-            ->getJson('/api/bens-materiais/nearby')
+            ->getJson('/api/v1/mobile/bens-materiais/nearby')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['latitude', 'longitude']);
     }
@@ -76,7 +76,7 @@ class NearbyTest extends TestCase
         );
 
         $this->actingAs($this->user)
-            ->getJson('/api/bens-materiais/nearby?latitude=-5.0892&longitude=-42.8016&raio_km=5')
+            ->getJson('/api/v1/mobile/bens-materiais/nearby?latitude=-5.0892&longitude=-42.8016&raio_km=5')
             ->assertStatus(200)
             ->assertJsonCount(0);
     }
