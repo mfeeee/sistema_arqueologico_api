@@ -14,16 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Node Dependencies & Build Assets
-        run: |
-          npm ci
-          npm run build
-
       - name: Prepare Environment
         run: cp .env.example .env
 
@@ -35,6 +25,16 @@ jobs:
 
       - name: Generate App Key
         run: docker compose exec -T app php artisan key:generate
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Node Dependencies & Build Assets
+        run: |
+          npm ci
+          npm run build
 
       - name: Run Tests (Inside Container)
         run: docker compose exec -T app php artisan test
