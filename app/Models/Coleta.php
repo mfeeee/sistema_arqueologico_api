@@ -26,7 +26,7 @@ class Coleta extends Model
         'natureza_bem',
         'tipo_bem',
         'artefatos',
-        'status_sync',
+        'status_sincronizacao',
         'uf',
         'versao',
         'dados_coletados',
@@ -40,7 +40,7 @@ class Coleta extends Model
         'natureza_bem' => NaturezaBem::class,
         'tipo_bem' => TipoBem::class,
         'artefatos' => 'array',
-        'status_sync' => StatusColeta::class,
+        'status_sincronizacao' => StatusColeta::class,
         'versao' => 'integer',
         'dados_coletados' => 'array',
         'deletado_em' => 'datetime',
@@ -53,7 +53,7 @@ class Coleta extends Model
 
     public function bemMaterial(): HasOne
     {
-        return $this->hasOne(BemMaterial::class, 'coleta_uuid');
+        return $this->hasOne(BemMaterial::class, 'coleta_id');
     }
 
     public function scopeDoUsuario($query, string $usuarioId): mixed

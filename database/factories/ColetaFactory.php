@@ -27,7 +27,7 @@ class ColetaFactory extends Factory
             'natureza_bem' => NaturezaBem::ARQUEOLOGICO,
             'tipo_bem' => null,
             'artefatos' => [],
-            'status_sync' => StatusColeta::PENDENTE,
+            'status_sincronizacao' => StatusColeta::PENDENTE,
             'uf' => null,
             'versao' => 1,
             'dados_coletados' => [],
