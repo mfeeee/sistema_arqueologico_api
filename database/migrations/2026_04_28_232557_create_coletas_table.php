@@ -18,13 +18,13 @@ return new class extends Migration
             $table->double('latitude');
             $table->double('longitude');
             $table->string('nome_bem');
-            $table->string('natureza_bem', 30);
-            $table->string('tipo_bem', 30);
+            $table->string('natureza_bem', 30)->nullable();
+            $table->string('tipo_bem', 30)->nullable();
             $table->jsonb('artefatos')->default('[]');
             $table->string('status_sync', 20)->default('pendente');
             $table->char('uf', 2)->nullable();
             $table->integer('versao')->default(1);
-            $table->jsonb('dados_coletados');
+            $table->jsonb('dados_coletados')->default('[]');
             $table->timestamp('deletado_em')->nullable();
             $table->timestamps();
         });
