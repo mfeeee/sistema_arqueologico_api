@@ -3,75 +3,51 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: sistema_arqueologico_app
-    restart: unless-stopped
-    working_dir: /var/www
+    working_dir: /var/www/html
     volumes:
-      - ./:/var/www
+      - .:/var/www/html
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
     depends_on:
       - postgres
       - redis
-    networks:
-      - sistema_arqueologico
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "${NGINX_PORT:-8000}:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-sistema_arqueologico}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.2-alpine
+    volumes:
+      - redis_data:/data
 
   queue:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: sistema_arqueologico_queue
-    restart: unless-stopped
-    working_dir: /var/www
-    command: php artisan queue:work --verbose --tries=3 --timeout=120
+    working_dir: /var/www/html
+    command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
     volumes:
-      - ./:/var/www
+      - .:/var/www/html
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
     depends_on:
-      - app
-      - redis
       - postgres
-    networks:
-      - sistema_arqueologico
-
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: sistema_arqueologico_nginx
-    restart: unless-stopped
-    ports:
-      - "8000:80"
-    volumes:
-      - ./:/var/www
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - app
-    networks:
-      - sistema_arqueologico
-
-  postgres:
-    image: postgis/postgis:16-3.4
-    container_name: sistema_arqueologico_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: sistema_arqueologico
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - sistema_arqueologico
-
-  redis:
-    image: redis:7-alpine
-    container_name: sistema_arqueologico_redis
-    restart: unless-stopped
-    ports:
-      - "6381:6379"
-    networks:
-      - sistema_arqueologico
+      - redis
 
 volumes:
   postgres_data:
-
-networks:
-  sistema_arqueologico:
-    driver: bridge
+  redis_data:
