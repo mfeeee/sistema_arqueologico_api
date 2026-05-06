@@ -12,8 +12,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
 
-Route::prefix('horizon')->middleware(['auth'])->group(function () {
-    Route::horizon();
-});
+Route::horizon();
 
 require __DIR__.'/settings.php';
