@@ -212,12 +212,24 @@ return [
         ],
     ],
 
+    'redis' => [
+        'connection' => [
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', 6379),
+            'database' => env('REDIS_HORIZON_DB', 2),
+        ],
+    ],
+
     'environments' => [
         'production' => [
             'supervisor-1' => [
-                'maxProcesses' => 10,
-                'balanceMaxShift' => 1,
-                'balanceCooldown' => 3,
+                'connection' => 'redis',
+                'queue' => ['default', 'coletas'],
+                'balance' => 'auto',
+                'processes' => 3,
+                'tries' => 3,
+                'timeout' => 120,
             ],
         ],
 
