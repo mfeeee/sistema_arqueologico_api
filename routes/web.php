@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
-use Laravel\Horizon\Horizon;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
