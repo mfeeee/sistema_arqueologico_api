@@ -3,6 +3,9 @@
         "version": "8.4"
     },
     "deploy": {
-        "startCommand": "php artisan migrate --seed --force && frankenphp run --config /etc/caddy/Caddyfile"
+        "startCommand": "php artisan migrate --force && frankenphp run --config /etc/caddy/Caddyfile"
+    },
+    "build": {
+        "buildCommand": "composer install --ignore-platform-reqs --no-dev --optimize-autoloader"
     }
 }
