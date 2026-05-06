@@ -23,7 +23,6 @@ class TestarFilaJob implements ShouldQueue
      */
     public function handle(): void
     {
-        \Illuminate\Support\Facades\Log::info('TestarFilaJob executado!');
-        echo "Job executado: " . now() . PHP_EOL;
+        Log::error('TestarFilaJob executado: ' . now());
     }
 }
