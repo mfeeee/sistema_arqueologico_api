@@ -23,6 +23,8 @@ class TestarFilaJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::error('TestarFilaJob executado: ' . now());
+        Log::INFO('TestarFilaJob INICIADO: ' . now());
+        sleep(10);
+        Log::INFO('TestarFilaJob FINALIZADO: ' . now());
     }
 }
