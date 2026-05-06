@@ -4,14 +4,28 @@ namespace App\Enums;
 
 enum ArtefatoBem: string
 {
-    case FAIANCA = 'faiança';
+    case FAIANCA = 'faianca';
     case CERAMICA = 'ceramica';
     case LITICO = 'litico';
-    case METAL = 'metal';
-    case OSSO = 'osso';
-    case VIDRO = 'vidro';
     case MADEIRA = 'madeira';
-    case COURO = 'couro';
+    case MALACOLOGICO = 'malacologico';
+    case SEMENTE = 'semente';
+    case OSSOS_FAUNISTICOS = 'ossosFaunisticos';
+    case PLASTICO = 'plastico';
+    case GRES = 'gres';
+    case CARVAO = 'carvao';
+    case FAIANCA_FINA = 'faiancaFina';
+    case PORCELANA = 'porcelana';
+    case TEXTIL = 'textil';
+    case FIBRA_VEGETAL = 'fibraVegetal';
+    case VITREO = 'vitreo';
+    case BORRACHA = 'borracha';
+    case SEDIMENTO = 'sedimento';
+    case CERAMICA_VIDRADA = 'ceramicaVidrada';
+    case METALICO = 'metalico';
+    case OSSOS_HUMANOS = 'ossosHumanosmanos';
+    case OUTROS = 'outros';
+
 
     public function label(): string
     {
@@ -19,11 +33,24 @@ enum ArtefatoBem: string
             self::FAIANCA => 'Faiança',
             self::CERAMICA => 'Cerâmica',
             self::LITICO => 'Lítico',
-            self::METAL => 'Metal',
-            self::OSSO => 'Osso',
-            self::VIDRO => 'Vidro',
             self::MADEIRA => 'Madeira',
-            self::COURO => 'Couro',
+            self::MALACOLOGICO => 'Malacológico',
+            self::SEMENTE => 'Semente',
+            self::OSSOS_FAUNISTICOS => 'Ossos faunísticos',
+            self::PLASTICO => 'Plástico',
+            self::GRES => 'Grés',
+            self::CARVAO => 'Carvão',
+            self::FAIANCA_FINA => 'Faiança fina',
+            self::PORCELANA => 'Porcelana',
+            self::TEXTIL => 'Têxtil',
+            self::FIBRA_VEGETAL => 'Fibra Vegetal',
+            self::VITREO => 'Vítreo',
+            self::BORRACHA => 'Borracha',
+            self::SEDIMENTO => 'Sedimento',
+            self::CERAMICA_VIDRADA => 'Cerâmica vidrada',
+            self::METALICO => 'Metálico',
+            self::OSSOS_HUMANOS => 'Ossos humanos',
+            self::OUTROS => 'Outros', 
         };
     }
 }

@@ -4,8 +4,8 @@ namespace App\Enums;
 
 enum NaturezaBem: string
 {
-    case ARQUEOLOGICO = 'arqueologico';
-    case PALEONTOLOGICO = 'paleontologico';
+    case ARQUEOLOGICO = 'bemArqueologico';
+    case PALEONTOLOGICO = 'bemPaleontologico';
 
     public function label(): string
     {
