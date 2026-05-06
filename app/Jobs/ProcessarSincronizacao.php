@@ -7,19 +7,18 @@ use App\Exceptions\SincronizacaoException;
 use App\Models\Coleta;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ProcessarSincronizacao implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Queueable;
 
     public int $tries = 3;
 
-    public int $backoff = 30; // segundos
+    public int $backoff = 30; 
+
+    public int $timeout = 120;
 
     public function __construct(
         private readonly string $usuarioId,
@@ -51,7 +50,7 @@ class ProcessarSincronizacao implements ShouldQueue
 
         if ($existente && $existente->versao > $dados['versao']) {
 
-            $existente->update(['status_sincronizacao' => StatusColeta::CONFLITO->value]);
+            $existente->update(['status_sincronizacao' => StatusColeta::CONFLITO]);
             throw new SincronizacaoException(
                 "Conflito de versão na coleta {$dados['id']}: servidor={$existente->versao}, cliente={$dados['versao']}"
             );
@@ -62,7 +61,7 @@ class ProcessarSincronizacao implements ShouldQueue
             [
                 ...$dados,
                 'usuario_id' => $this->usuarioId,
-                'status_sincronizacao' => StatusColeta::SINCRONIZADO->value,
+                'status_sincronizacao' => StatusColeta::SINCRONIZADO,
             ]
         );
     }
@@ -74,7 +73,7 @@ class ProcessarSincronizacao implements ShouldQueue
         }
 
         Coleta::where('id', $coletaId)
-            ->update(['status_sincronizacao' => StatusColeta::CONFLITO->value]);
+            ->update(['status_sincronizacao' => StatusColeta::CONFLITO]);
     }
 
     public function failed(\Throwable $e): void
