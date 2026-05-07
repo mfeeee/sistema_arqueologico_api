@@ -14,7 +14,7 @@ class SincronizacaoController extends Controller
         $usuarioId = $request->user()->id;
         $coletas = $request->validated()['coletas'];
 
-        ProcessarSincronizacao::dispatch($usuarioId, $coletas);
+        dispatch(new ProcessarSincronizacao($usuarioId, $coletas));
 
         return response()->json([
             'message' => 'Sincronização recebida e enfileirada.',
