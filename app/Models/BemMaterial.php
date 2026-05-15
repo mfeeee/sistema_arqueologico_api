@@ -73,6 +73,11 @@ class BemMaterial extends Model
         return $this->hasMany(ResponsavelSitio::class, 'bem_material_id');
     }
 
+    public function curadorias(): HasMany
+    {
+        return $this->hasMany(Curadoria::class, 'bem_material_id');
+    }
+
     protected function geom(): Attribute
     {
         return Attribute::make(
@@ -83,7 +88,7 @@ class BemMaterial extends Model
 
     public function scopePublicados($query)
     {
-        return $query->where('publicado', true)->whereNull('deletado_em');
+        return $query->where('publicado', true)->whereNull('deleted_at');
     }
 
     public function scopeProximo($query, float $lat, float $lng, int $raioKm = 5)

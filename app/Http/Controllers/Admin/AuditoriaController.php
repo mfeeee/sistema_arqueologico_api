@@ -20,10 +20,21 @@ class AuditoriaController extends Controller
             $query->where('entidade_tipo', $request->entidade_tipo);
         }
 
+        if ($request->filled('entidade_id')) {
+            $query->where('entidade_id', $request->entidade_id);
+        }
+
         if ($request->filled('usuario_id')) {
             $query->where('usuario_id', $request->usuario_id);
         }
 
         return response()->json($query->paginate(50));
+    }
+
+    public function show(Auditoria $auditoria): JsonResponse
+    {
+        $this->authorize('view', $auditoria);
+
+        return response()->json($auditoria->load('usuario', 'curadoria'));
     }
 }

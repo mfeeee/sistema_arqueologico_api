@@ -36,6 +36,8 @@ class AvaliarCuradoriaRequest extends FormRequest
                 'nullable', 'uuid', 'exists:bens_materiais,id',
             ],
             'observacao' => ['nullable', 'string', 'max:2000'],
+            'publicado' => ['sometimes', 'nullable', 'boolean'],
+            'campos' => ['sometimes', 'nullable', 'array'],
         ];
     }
 }
