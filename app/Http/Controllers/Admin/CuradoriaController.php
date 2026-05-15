@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\StatusColeta;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Curadoria\AvaliarCuradoriaRequest;
 use App\Models\BemMaterial;
 use App\Models\Curadoria;

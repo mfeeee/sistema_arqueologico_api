@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 
 class TestarFilaJob implements ShouldQueue
 {
@@ -23,8 +23,8 @@ class TestarFilaJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::error('TestarFilaJob INICIADO: ' . now());
+        Log::error('TestarFilaJob INICIADO: '.now());
         sleep(10);
-        Log::error('TestarFilaJob FINALIZADO: ' . now());
+        Log::error('TestarFilaJob FINALIZADO: '.now());
     }
 }
