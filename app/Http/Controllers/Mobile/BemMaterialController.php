@@ -12,8 +12,20 @@ class BemMaterialController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = BemMaterial::scopePublicados(BemMaterial::query())
+        $query = BemMaterial::query()
             ->with(['midias', 'responsavel']);
+
+        [$hasPublicadoFilter, $publicadoFilter] = $this->resolvePublicadoFilter($request);
+
+        if ($hasPublicadoFilter) {
+            $query->whereNull('deleted_at');
+
+            if (! is_null($publicadoFilter)) {
+                $query->where('publicado', $publicadoFilter);
+            }
+        } else {
+            $query->publicados();
+        }
 
         if ($request->filled('uf')) {
             $query->where('uf', strtoupper($request->uf));
@@ -34,13 +46,25 @@ class BemMaterialController extends Controller
             'raio_km' => ['nullable', 'numeric', 'min:0.1', 'max:100'],
         ]);
 
-        $bens = BemMaterial::proximo(
+        $bensQuery = BemMaterial::proximo(
             lat: (float) $request->latitude,
             lng: (float) $request->longitude,
             raioKm: (float) ($request->raio_km ?? 5),
-        )
-            ->where('publicado', true)
-            ->with(['midias', 'responsavel'])
+        );
+
+        [$hasPublicadoFilter, $publicadoFilter] = $this->resolvePublicadoFilter($request);
+
+        if ($hasPublicadoFilter) {
+            $bensQuery->whereNull('deleted_at');
+
+            if (! is_null($publicadoFilter)) {
+                $bensQuery->where('publicado', $publicadoFilter);
+            }
+        } else {
+            $bensQuery->where('publicado', true)->whereNull('deleted_at');
+        }
+
+        $bens = $bensQuery->with(['midias', 'responsavel'])
             ->limit(50)
             ->get();
 
@@ -58,9 +82,13 @@ class BemMaterialController extends Controller
     {
         $this->authorize('view', $bemMaterial);
 
-        return response()->json(
-            $bemMaterial->load(['midias', 'responsavel', 'curadorias'])
-        );
+        $bemMaterialId = basename($request->path());
+
+        $bemMaterial = BemMaterial::query()
+            ->with(['midias', 'responsavel'])
+            ->findOrFail($bemMaterialId);
+
+        return response()->json($bemMaterial);
     }
 
     public function update(StoreBemMaterialRequest $request, BemMaterial $bemMaterial): JsonResponse
@@ -79,5 +107,36 @@ class BemMaterialController extends Controller
         $bemMaterial->update(['deletado_em' => now()]);
 
         return response()->json(null, 204);
+    }
+
+    private function resolvePublicadoFilter(Request $request): array
+    {
+        $key = null;
+
+        if ($request->has('publicado')) {
+            $key = 'publicado';
+        } elseif ($request->has('publicados')) {
+            $key = 'publicados';
+        }
+
+        if (is_null($key)) {
+            return [false, true];
+        }
+
+        $rawValue = strtolower(trim((string) $request->input($key)));
+
+        if ($rawValue === 'all') {
+            return [true, null];
+        }
+
+        if (in_array($rawValue, ['1', 'true'], true)) {
+            return [true, true];
+        }
+
+        if (in_array($rawValue, ['0', 'false'], true)) {
+            return [true, false];
+        }
+
+        return [false, true];
     }
 }

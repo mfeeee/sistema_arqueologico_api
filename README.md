@@ -127,6 +127,22 @@ make migrate
 make seed
 ```
 
+Os seeders são executados na seguinte ordem e cobrem os seguintes cenários:
+
+| Seeder | Cenários gerados |
+|---|---|
+| `UserSeeder` | 3 usuários fixos: admin, curador, coletor |
+| `BemMaterialSeeder` | 6 sítios base do Piauí (PI-BASE-0001 a 0006), com mídias e responsáveis |
+| `ColetaECuradoriaSeeder` | **A** — 3 pendentes de criação de sítio · **B** — 3 aprovados `criarSitio` + auditoria Inserção · **C** — 3 aprovados `atualizarSitio` preenchendo campo null · **D** — 3 aprovados `atualizarSitio` modificando campo existente · **E** — 3 aprovados `atualizarSitio` múltiplos campos · **F** — 3 rejeitados |
+| `AuditoriaManualSeeder` | Cenário G: auditorias com `meio = Manual` |
+| `CuradoriaAtualizacaoPendenteSeeder` | 3 curadorias pendentes vinculadas a bens existentes para testar o fluxo de `atualizarSitio` interativamente |
+
+**Adicionar apenas as pendentes de atualização (sem recriar o banco):**
+
+```bash
+docker compose exec app php artisan db:seed --class=CuradoriaAtualizacaoPendenteSeeder
+```
+
 A API estará disponível em **http://localhost:8000/api**.
 
 ---
@@ -208,8 +224,8 @@ Authorization: Bearer {token}
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `GET` | `/api/v1/mobile/bens-materiais` | Lista bens materiais publicados (paginado) |
-| `GET` | `/api/v1/mobile/bens-materiais/nearby` | Busca por proximidade geográfica |
+| `GET` | `/api/v1/mobile/bens-materiais` | Lista bens materiais (paginado), com filtro opcional de publicação |
+| `GET` | `/api/v1/mobile/bens-materiais/nearby` | Busca por proximidade geográfica, com filtro opcional de publicação |
 | `POST` | `/api/v1/mobile/bens-materiais` | Cadastra novo bem material |
 | `GET` | `/api/v1/mobile/bens-materiais/{id}` | Detalha um bem material |
 | `PUT` | `/api/v1/mobile/bens-materiais/{id}` | Atualiza um bem material |
@@ -222,6 +238,7 @@ Authorization: Bearer {token}
 | `latitude` | `numeric` | ✅ | Latitude entre -90 e 90 |
 | `longitude` | `numeric` | ✅ | Longitude entre -180 e 180 |
 | `raio_km` | `numeric` | ❌ | Raio de busca em km (padrão: 5, máx: 100) |
+| `publicado` | `string` | ❌ | Filtro de publicação: `true`, `false` ou `all` (padrão: `true`) |
 
 **Query params — `GET /api/v1/mobile/bens-materiais`**
 
@@ -229,6 +246,7 @@ Authorization: Bearer {token}
 |---|---|---|---|
 | `uf` | `string` | ❌ | Filtra por UF (ex: `MA`) |
 | `tipo` | `string` | ❌ | Filtra por tipo de bem |
+| `publicado` | `string` | ❌ | Filtro de publicação: `true`, `false` ou `all` (padrão: `true`) |
 
 #### Sincronização
 
@@ -268,32 +286,61 @@ Authorization: Bearer {token}
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `GET` | `/api/v1/admin/curadorias` | Lista curadorias pendentes (paginado) |
-| `PATCH` | `/api/v1/admin/curadorias/{id}/avaliar` | Avalia uma curadoria |
+| `GET` | `/api/v1/admin/curadorias` | Lista curadorias filtradas por status (paginado, 20/página) |
+| `PATCH` | `/api/v1/admin/curadorias/{id}/avaliar` | Avalia uma curadoria e aplica os efeitos no BemMaterial |
+
+**Query params — `GET /api/v1/admin/curadorias`**
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `status` | `string` | ❌ | Filtra por status: `pendente` \| `aprovado` \| `rejeitado` (padrão: `pendente`) |
 
 **Body — `PATCH /api/v1/admin/curadorias/{id}/avaliar`**
 
 ```json
 {
-  "status": "aprovado",                      // obrigatório
-  "acao_resultante": "criar_sitio",          // obrigatório: criar_sitio | atualizar_sitio | rejeitar
-  "bem_material_id": "uuid-do-bem",          // obrigatório se acao_resultante = atualizar_sitio
-  "observacao": "Registro validado."         // opcional
+  "status": "aprovado",                      // obrigatório: aprovado | rejeitado
+  "acao_resultante": "criarSitio",           // obrigatório: criarSitio | atualizarSitio | rejeitar
+  "bem_material_id": "uuid-do-bem",          // obrigatório se acao_resultante = atualizarSitio
+  "observacao": "Registro validado.",        // opcional
+  "publicado": false,                        // opcional (bool): define publicado no bem criado/atualizado
+  "campos": {                                // opcional: campos específicos a aplicar no bem (atualizarSitio)
+    "nome_bem": "Novo nome",
+    "municipio": "São Raimundo Nonato",
+    "meios_acesso": "Acesso pela PI-247..."
+  }
 }
 ```
+
+**Comportamento por `acao_resultante`**
+
+| Valor | Efeito no banco |
+|---|---|
+| `criarSitio` | Cria novo `BemMaterial` com os dados da coleta (incluindo campos de `dados_coletados`). Gera auditoria de **Inserção**. |
+| `atualizarSitio` | Atualiza o `BemMaterial` referenciado por `bem_material_id`. Se `campos` for enviado, aplica somente esses campos; caso contrário, aplica todos os campos não-nulos da coleta. Atualiza o `geom` PostGIS se latitude ou longitude mudou. Gera auditoria de **Alteração** com snapshot completo em `valor_anterior` e apenas os campos alterados em `valor_novo`. |
+| `rejeitar` | Nenhum `BemMaterial` é criado ou alterado. Nenhuma auditoria de bem é gerada. |
+
+> **Campos permitidos em `campos`:** `nome_bem`, `nomes_populares`, `natureza`, `tipo`, `artefatos`, `meios_acesso`, `uf`, `municipio`, `cep`, `endereco`, `latitude`, `longitude`, `ano_registro`, `descricao_atualizacao`, `publicado`. Chaves não reconhecidas são silenciosamente ignoradas.
 
 #### Auditorias
 
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `GET` | `/api/v1/admin/auditorias` | Lista registros de auditoria (paginado, 50/página) |
+| `GET` | `/api/v1/admin/auditorias/{id}` | Detalha um registro de auditoria específico |
 
 **Query params — `GET /api/v1/admin/auditorias`**
 
 | Parâmetro | Tipo | Obrigatório | Descrição |
 |---|---|---|---|
-| `entidade_tipo` | `string` | ❌ | Filtra por tipo de entidade auditada |
+| `entidade_tipo` | `string` | ❌ | Filtra por tipo de entidade auditada (ex: `App\Models\BemMaterial`) |
+| `entidade_id` | `uuid` | ❌ | Filtra por ID da entidade auditada |
 | `usuario_id` | `uuid` | ❌ | Filtra por usuário que realizou a ação |
+
+**Estrutura de `valor_anterior` e `valor_novo`**
+
+- **Inserção** (`criarSitio`): `valor_anterior = null`, `valor_novo` = snapshot completo do bem criado.
+- **Alteração** (`atualizarSitio`): `valor_anterior` = snapshot completo do bem antes da mudança, `valor_novo` = apenas os campos que foram efetivamente alterados.
 
 ***
 
@@ -386,6 +433,39 @@ docker compose exec app php artisan test --compact --filter=testNomeDoTeste
 ```
 
 Os testes cobrem os módulos de Coleta, Curadoria, Auditoria e Bens Materiais, incluindo os fluxos de autenticação e sincronização.
+
+---
+
+## Futuras Implementações
+
+Funcionalidades identificadas como necessárias mas ainda não implementadas, ordenadas por impacto estimado.
+
+### Alta prioridade
+
+| # | Funcionalidade | Motivação |
+|---|---|---|
+| 1 | **Endpoint `GET /admin/curadorias/{id}`** | Hoje o `web_coletum` localiza uma curadoria iterando todas as páginas pelos três status (`pendente`, `aprovado`, `rejeitado`). Um endpoint direto por ID elimina esse custo e é o padrão REST esperado. |
+| 2 | **Endpoint `GET /admin/bens-materiais/{id}/curadorias`** | Permite listar todo o histórico de curadorias de um bem específico sem precisar varrer a listagem geral filtrada por ID. Útil para a linha do tempo do sítio. |
+| 3 | **Validação de `geojson` no update de BemMaterial** | O campo `geojson` aceita qualquer JSON. Validar se é um GeoJSON válido (tipo `Point`, `Polygon`, etc.) e atualizar `geom` automaticamente no `PUT /mobile/bens-materiais/{id}` tornaria o dado geoespacial mais confiável. |
+| 4 | **Criação de Auditoria no `PUT /mobile/bens-materiais/{id}`** | Atualizações diretas via mobile não geram auditoria. Qualquer alteração em um bem deveria deixar rastro, independentemente de passar por curadoria. |
+
+### Média prioridade
+
+| # | Funcionalidade | Motivação |
+|---|---|---|
+| 5 | **Paginação com cursor em `/admin/auditorias`** | Paginação por offset degrada com tabelas grandes (OFFSET 5000 escaneia 5000 linhas antes de retornar). Cursor-based pagination (ex.: `?after=uuid`) é O(log n) com índice. |
+| 6 | **Filtros adicionais em `/admin/auditorias`** | Suporte a `operacao` (Inserção, Alteração) e `data_inicio`/`data_fim` para facilitar investigações de auditoria sem precisar baixar todas as páginas. |
+| 7 | **Endpoint de exportação de auditoria** | `GET /admin/auditorias/export?format=csv` para geração de relatórios formais exigidos por processos de conformidade e publicação científica. |
+| 8 | **Upload de mídias na API** | Hoje `dados_coletados.midias` armazena apenas URLs externas. Um endpoint de upload (`POST /mobile/coletas/{id}/midias`) com armazenamento em S3 ou disco local centralizaria a gestão de evidências fotográficas. |
+
+### Baixa prioridade / exploratória
+
+| # | Funcionalidade | Motivação |
+|---|---|---|
+| 9 | **Evento/webhook na aprovação de curadoria** | Ao aprovar uma curadoria, o `web_coletum` invalida o cache manualmente via `invalidate_bens_cache()`. Um evento (`CuradoriaAprovada`) que dispara um webhook ou SSE eliminaria o acoplamento e funcionaria para qualquer cliente. |
+| 10 | **Versionamento de BemMaterial** | Guardar um snapshot completo a cada aprovação de curadoria permitiria consultar o estado exato do sítio em qualquer ponto do tempo, não apenas o anterior imediato. |
+| 11 | **Busca full-text em bens materiais** | `GET /mobile/bens-materiais?q=pedra+furada` usando `tsvector`/`tsquery` do PostgreSQL para buscas textuais eficientes em `nome_bem`, `nomes_populares` e `descricao_atualizacao`. |
+| 12 | **Rate limiting granular nas rotas admin** | As rotas `admin` não têm throttle configurado. Adicionar limites por perfil (ex.: 120 req/min para curador, 300 para admin) previne uso indevido e sobrecarga acidental. |
 
 ---
 

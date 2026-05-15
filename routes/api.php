@@ -45,4 +45,5 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);
+    Route::get('auditorias/{auditoria}', [AuditoriaController::class, 'show']);
 });
