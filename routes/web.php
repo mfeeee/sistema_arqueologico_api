@@ -16,5 +16,3 @@ Route::get('/test-queue', function () {
         'time' => now()->toDateTimeString(),
     ]);
 });
-
-require __DIR__.'/settings.php';
