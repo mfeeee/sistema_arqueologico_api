@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class FotoUploadController extends Controller
 {
-    public function store(Request $request): JsonResponse {
+    public function store(Request $request): JsonResponse
+    {
         $request->validate([
             'fotos' => 'required|array|max:10',
             'fotos.*' => 'image|mimes:png,jpeg,jpg,webp,heic,heif|max:5120'

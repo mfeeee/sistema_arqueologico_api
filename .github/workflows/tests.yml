@@ -31,22 +31,5 @@ jobs:
       - name: Clear Config Cache
         run: docker compose exec -T app php artisan config:clear
 
-      - name: Setup PHP on Host
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.4'
-          coverage: none
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Node Dependencies
-        run: npm ci
-
-      - name: Build Assets
-        run: npm run build
-
       - name: Run Tests (Inside Container)
         run: docker compose exec -T app php artisan test
