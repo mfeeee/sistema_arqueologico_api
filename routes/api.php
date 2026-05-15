@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
 use App\Http\Controllers\Admin\CuradoriaController;
+use App\Http\Controllers\Mobile\FotoUploadController;
 use App\Http\Controllers\Mobile\SincronizacaoController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,9 @@ Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
     // Bens Materiais
     Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
     Route::apiResource('bens-materiais', BemMaterialController::class);
+
+    // Fotos
+    Route::post('fotos', [FotoUploadController::class, 'store']);
 });
 
 // -- Admin/Site
