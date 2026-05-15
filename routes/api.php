@@ -1,10 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditoriaController;
+use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
-use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Mobile\FotoUploadController;
 use App\Http\Controllers\Mobile\SincronizacaoController;
 use Illuminate\Support\Facades\Route;
@@ -21,8 +21,7 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-
-// -- Mobile 
+// -- Mobile
 Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
     // Coletas
     Route::apiResource('coletas', ColetaController::class);

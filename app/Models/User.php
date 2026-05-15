@@ -2,20 +2,21 @@
 
 namespace App\Models;
 
+use App\Enums\ClassificacaoUsuario;
+use App\Enums\PerfilUsuario;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Enums\PerfilUsuario;
-use App\Enums\ClassificacaoUsuario;
-use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use Notifiable, HasFactory, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [

@@ -15,28 +15,28 @@ class UserSeeder extends Seeder
     {
         $usuarios = [
             [
-                'name'          => 'Admin Teste',
-                'email'         => 'admin@arqueologia.test',
-                'password'      => Hash::make('password'),
-                'perfil'        => 'admin',
+                'name' => 'Admin Teste',
+                'email' => 'admin@arqueologia.test',
+                'password' => Hash::make('password'),
+                'perfil' => 'admin',
                 'classificacao' => 'arqueologo',
-                'ativo'         => true,
+                'ativo' => true,
             ],
             [
-                'name'          => 'Curador Teste',
-                'email'         => 'curador@arqueologia.test',
-                'password'      => Hash::make('password'),
-                'perfil'        => 'curador',
+                'name' => 'Curador Teste',
+                'email' => 'curador@arqueologia.test',
+                'password' => Hash::make('password'),
+                'perfil' => 'curador',
                 'classificacao' => 'arqueologo',
-                'ativo'         => true,
+                'ativo' => true,
             ],
             [
-                'name'          => 'Coletor Teste',
-                'email'         => 'coletor@arqueologia.test',
-                'password'      => Hash::make('password'),
-                'perfil'        => 'coletor',
+                'name' => 'Coletor Teste',
+                'email' => 'coletor@arqueologia.test',
+                'password' => Hash::make('password'),
+                'perfil' => 'coletor',
                 'classificacao' => 'estudante',
-                'ativo'         => true,
+                'ativo' => true,
             ],
         ];
 
