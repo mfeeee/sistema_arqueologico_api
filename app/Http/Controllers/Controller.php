@@ -10,7 +10,9 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
  *     version="1.0.0",
  *     description="API REST para o Sistema de Coleta Arqueologica."
  * )
+ *
  * @OA\Server(url="/api", description="Servidor Railway")
+ *
  * @OA\SecurityScheme(
  *     securityScheme="bearerAuth",
  *     type="http",

@@ -6,7 +6,6 @@ use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\TipoBem;
 use App\Models\BemMaterial;
-use BcMath\Number;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 class BemMaterialFactory extends Factory
 {
     protected $model = BemMaterial::class;
+
     /**
      * Define the model's default state.
      *
@@ -26,7 +26,7 @@ class BemMaterialFactory extends Factory
         return [
             'nome_bem' => fake()->words(3, true),
             'nomes_populares' => fake()->words(3, true),
-            'natureza' =>  NaturezaBem::ARQUEOLOGICO,
+            'natureza' => NaturezaBem::ARQUEOLOGICO,
             'tipo' => TipoBem::SITIO,
             'meios_acesso' => fake()->sentences(2, true),
             'artefatos' => fake()->randomElements(
@@ -47,7 +47,7 @@ class BemMaterialFactory extends Factory
             'ano_registro' => null,
             'descricao_atualizacao' => null,
         ];
-        
+
     }
 
     public function configure(): static

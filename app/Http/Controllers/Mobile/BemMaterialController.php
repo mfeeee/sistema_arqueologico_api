@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\BemMaterial\StoreBemMaterialRequest;
 use App\Models\BemMaterial;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class BemMaterialController extends Controller
 {
@@ -29,9 +29,9 @@ class BemMaterialController extends Controller
     public function nearby(Request $request): JsonResponse
     {
         $request->validate([
-            'latitude'  => ['required', 'numeric', 'between:-90,90'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'raio_km'   => ['nullable', 'numeric', 'min:0.1', 'max:100'],
+            'raio_km' => ['nullable', 'numeric', 'min:0.1', 'max:100'],
         ]);
 
         $bens = BemMaterial::proximo(
