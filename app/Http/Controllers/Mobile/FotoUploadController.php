@@ -12,7 +12,7 @@ class FotoUploadController extends Controller
     public function store(Request $request): JsonResponse {
         $request->validate([
             'fotos' => 'required|array|max:10',
-            'fotos.*' => 'image|mimes:jpeg,jpg,webp,heic,heicf|max:5120'
+            'fotos.*' => 'image|mimes:png,jpeg,jpg,webp,heic,heif|max:5120'
         ]);
 
         $urls = [];
