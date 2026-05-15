@@ -13,7 +13,7 @@ class FotoUploadController extends Controller
     {
         $request->validate([
             'fotos' => 'required|array|max:10',
-            'fotos.*' => 'image|mimes:png,jpeg,jpg,webp,heic,heif|max:5120'
+            'fotos.*' => 'image|mimes:png,jpeg,jpg,webp,heic,heif|max:5120',
         ]);
 
         $urls = [];
