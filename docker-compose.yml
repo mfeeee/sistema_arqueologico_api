@@ -24,8 +24,6 @@ services:
 
   postgres:
     image: postgis/postgis:16-3.4-alpine
-    ports:                              #descartar na produção, é apenas para desenvolvimento local
-      - "5433:5432"
     environment:
       POSTGRES_DB: ${DB_DATABASE:-sistema_arqueologico}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
