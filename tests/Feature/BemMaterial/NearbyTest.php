@@ -2,9 +2,7 @@
 
 namespace Tests\Feature\BemMaterial;
 
-use App\Enums\NaturezaBem;
 use App\Enums\PerfilUsuario;
-use App\Enums\TipoBem;
 use App\Models\BemMaterial;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,20 +27,20 @@ class NearbyTest extends TestCase
         // Teresina-PI: -5.0892, -42.8016
         $bemProximo = BemMaterial::factory()->create([
             'publicado' => true,
-            'latitude'  => -5.0900,
+            'latitude' => -5.0900,
             'longitude' => -42.8020,
         ]);
 
         // Fortaleza-CE: ~500km de distância
         BemMaterial::factory()->create([
             'publicado' => true,
-            'latitude'  => -3.7172,
+            'latitude' => -3.7172,
             'longitude' => -38.5433,
         ]);
 
         // Seta o geom via PostGIS para o bem próximo
         DB::statement(
-            "UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?",
+            'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
             [$bemProximo->longitude, $bemProximo->latitude, $bemProximo->id]
         );
 
@@ -66,12 +64,12 @@ class NearbyTest extends TestCase
     {
         $bemPrivado = BemMaterial::factory()->create([
             'publicado' => false,
-            'latitude'  => -5.0900,
+            'latitude' => -5.0900,
             'longitude' => -42.8020,
         ]);
 
         DB::statement(
-            "UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?",
+            'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
             [$bemPrivado->longitude, $bemPrivado->latitude, $bemPrivado->id]
         );
 

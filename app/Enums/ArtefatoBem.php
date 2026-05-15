@@ -26,7 +26,6 @@ enum ArtefatoBem: string
     case OSSOS_HUMANOS = 'ossosHumanosmanos';
     case OUTROS = 'outros';
 
-
     public function label(): string
     {
         return match ($this) {
@@ -50,7 +49,7 @@ enum ArtefatoBem: string
             self::CERAMICA_VIDRADA => 'Cerâmica vidrada',
             self::METALICO => 'Metálico',
             self::OSSOS_HUMANOS => 'Ossos humanos',
-            self::OUTROS => 'Outros', 
+            self::OUTROS => 'Outros',
         };
     }
 }

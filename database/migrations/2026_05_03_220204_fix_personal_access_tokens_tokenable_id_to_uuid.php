@@ -5,7 +5,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-
 return new class extends Migration
 {
     /**
@@ -18,7 +17,6 @@ return new class extends Migration
         Schema::table('personal_access_tokens', function (Blueprint $table) {
             $table->dropIndex(['tokenable_type', 'tokenable_id']);
         });
-
 
         DB::statement('ALTER TABLE personal_access_tokens ALTER COLUMN tokenable_id TYPE uuid USING tokenable_id::text::uuid');
 

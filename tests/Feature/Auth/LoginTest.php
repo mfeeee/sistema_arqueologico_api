@@ -14,14 +14,14 @@ class LoginTest extends TestCase
     public function test_usuario_pode_fazer_login_com_credenciais_validas(): void
     {
         $user = User::factory()->create([
-            'email'    => 'coletor@teste.com',
+            'email' => 'coletor@teste.com',
             'password' => bcrypt('senha123'),
-            'ativo'    => true,
-            'perfil'   => PerfilUsuario::COLETOR,
+            'ativo' => true,
+            'perfil' => PerfilUsuario::COLETOR,
         ]);
 
         $response = $this->postJson('/api/auth/login', [
-            'email'    => 'coletor@teste.com',
+            'email' => 'coletor@teste.com',
             'password' => 'senha123',
         ]);
 
@@ -35,12 +35,12 @@ class LoginTest extends TestCase
     public function test_login_falha_com_credenciais_invalidas(): void
     {
         User::factory()->create([
-            'email'    => 'coletor@teste.com',
+            'email' => 'coletor@teste.com',
             'password' => bcrypt('senha123'),
         ]);
 
         $this->postJson('/api/auth/login', [
-            'email'    => 'coletor@teste.com',
+            'email' => 'coletor@teste.com',
             'password' => 'senha_errada',
         ])->assertStatus(401);
     }
@@ -48,13 +48,13 @@ class LoginTest extends TestCase
     public function test_login_falha_para_usuario_inativo(): void
     {
         User::factory()->create([
-            'email'    => 'inativo@teste.com',
+            'email' => 'inativo@teste.com',
             'password' => bcrypt('senha123'),
-            'ativo'    => false,
+            'ativo' => false,
         ]);
 
         $this->postJson('/api/auth/login', [
-            'email'    => 'inativo@teste.com',
+            'email' => 'inativo@teste.com',
             'password' => 'senha123',
         ])->assertStatus(403);
     }

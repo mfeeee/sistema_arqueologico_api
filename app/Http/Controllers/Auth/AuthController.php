@@ -22,6 +22,7 @@ class AuthController extends Controller
 
         if (! $user->ativo) {
             Auth::logout();
+
             return response()->json(['message' => 'Conta desativada.'], 403);
         }
 
@@ -32,12 +33,12 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user'  => [
-                'id'             => $user->id,
-                'name'           => $user->name,
-                'email'          => $user->email,
-                'perfil'         => $user->perfil,
-                'classificacao'  => $user->classificacao,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'perfil' => $user->perfil,
+                'classificacao' => $user->classificacao,
             ],
         ]);
     }
@@ -45,12 +46,12 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $user = User::create([
-            'name'          => $request->name,
-            'email'         => $request->email,
-            'password'      => $request->password,
-            'perfil'        => PerfilUsuario::COLETOR,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => $request->password,
+            'perfil' => PerfilUsuario::COLETOR,
             'classificacao' => $request->classificacao,
-            'ativo'         => true,
+            'ativo' => true,
         ]);
 
         $token = $user->createToken(
@@ -60,11 +61,11 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user'  => [
-                'id'            => $user->id,
-                'name'          => $user->name,
-                'email'         => $user->email,
-                'perfil'        => $user->perfil,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'perfil' => $user->perfil,
                 'classificacao' => $user->classificacao,
             ],
         ], 201);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\TestarFilaJob;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -10,7 +11,8 @@ Route::get('/', function () {
 });
 
 Route::get('/test-queue', function () {
-    \App\Jobs\TestarFilaJob::dispatch();
+    TestarFilaJob::dispatch();
+
     return response()->json([
         'status' => 'dispatched',
         'time' => now()->toDateTimeString(),

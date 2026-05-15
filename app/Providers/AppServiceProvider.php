@@ -2,10 +2,6 @@
 
 namespace App\Providers;
 
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rules\Password;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
@@ -14,17 +10,19 @@ use App\Policies\AuditoriaPolicy;
 use App\Policies\BemMaterialPolicy;
 use App\Policies\ColetaPolicy;
 use App\Policies\CuradoriaPolicy;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-
     protected $policies = [
-        Coleta::class      => ColetaPolicy::class,
+        Coleta::class => ColetaPolicy::class,
         BemMaterial::class => BemMaterialPolicy::class,
-        Curadoria::class   => CuradoriaPolicy::class,
-        Auditoria::class   => AuditoriaPolicy::class,
+        Curadoria::class => CuradoriaPolicy::class,
+        Auditoria::class => AuditoriaPolicy::class,
     ];
 
     /**
