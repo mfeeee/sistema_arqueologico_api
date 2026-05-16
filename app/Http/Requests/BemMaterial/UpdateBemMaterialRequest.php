@@ -17,7 +17,7 @@ class UpdateBemMaterialRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('bemMaterial'));
+        return $this->user()->can('update', BemMaterial::class);
     }
 
     /**
