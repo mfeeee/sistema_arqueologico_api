@@ -41,7 +41,9 @@ Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
 Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->group(function () {
     // Curadorias
     Route::get('curadorias', [CuradoriaController::class, 'index']);
+    Route::get('curadorias/{curadoria}', [CuradoriaController::class, 'show']);
     Route::patch('curadorias/{curadoria}/avaliar', [CuradoriaController::class, 'avaliar']);
+    Route::get('bens-materiais/{bemMaterial}/curadorias', [CuradoriaController::class, 'porBemMaterial']);
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);

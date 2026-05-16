@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BemMaterial\StoreBemMaterialRequest;
+use App\Http\Requests\BemMaterial\UpdateBemMaterialRequest;
 use App\Models\BemMaterial;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -91,7 +92,7 @@ class BemMaterialController extends Controller
         return response()->json($bemMaterial);
     }
 
-    public function update(StoreBemMaterialRequest $request, BemMaterial $bemMaterial): JsonResponse
+    public function update(UpdateBemMaterialRequest $request, BemMaterial $bemMaterial): JsonResponse
     {
         $this->authorize('update', $bemMaterial);
 

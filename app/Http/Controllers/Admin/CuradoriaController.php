@@ -30,6 +30,25 @@ class CuradoriaController extends Controller
         return response()->json($curadorias);
     }
 
+    public function show(Curadoria $curadoria): JsonResponse
+    {
+        $this->authorize('view', $curadoria);
+
+        return response()->json($curadoria->load(['coleta', 'bemMaterial', 'curador']));
+    }
+
+    public function porBemMaterial(BemMaterial $bemMaterial): JsonResponse
+    {
+        $this->authorize('view', $bemMaterial);
+
+        $curadorias = Curadoria::with(['coleta', 'curador'])
+            ->where('bem_material_id', $bemMaterial->id)
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return response()->json($curadorias);
+    }
+
     public function avaliar(AvaliarCuradoriaRequest $request, Curadoria $curadoria): JsonResponse
     {
         $this->authorize('avaliar', $curadoria);

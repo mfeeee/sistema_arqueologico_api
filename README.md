@@ -287,6 +287,7 @@ Authorization: Bearer {token}
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `GET` | `/api/v1/admin/curadorias` | Lista curadorias filtradas por status (paginado, 20/página) |
+| `GET` | `/api/v1/admin/curadorias/{id}` | Retorna uma curadoria específica pelo ID |
 | `PATCH` | `/api/v1/admin/curadorias/{id}/avaliar` | Avalia uma curadoria e aplica os efeitos no BemMaterial |
 
 **Query params — `GET /api/v1/admin/curadorias`**
@@ -321,6 +322,12 @@ Authorization: Bearer {token}
 | `rejeitar` | Nenhum `BemMaterial` é criado ou alterado. Nenhuma auditoria de bem é gerada. |
 
 > **Campos permitidos em `campos`:** `nome_bem`, `nomes_populares`, `natureza`, `tipo`, `artefatos`, `meios_acesso`, `uf`, `municipio`, `cep`, `endereco`, `latitude`, `longitude`, `ano_registro`, `descricao_atualizacao`, `publicado`. Chaves não reconhecidas são silenciosamente ignoradas.
+
+#### Bens Materiais
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/admin/bens-materiais/{id}/curadorias` | Lista todas as curadorias vinculadas a um bem material (paginado, 20/página, ordem decrescente) |
 
 #### Auditorias
 
@@ -444,28 +451,26 @@ Funcionalidades identificadas como necessárias mas ainda não implementadas, or
 
 | # | Funcionalidade | Motivação |
 |---|---|---|
-| 1 | **Endpoint `GET /admin/curadorias/{id}`** | Hoje o `web_coletum` localiza uma curadoria iterando todas as páginas pelos três status (`pendente`, `aprovado`, `rejeitado`). Um endpoint direto por ID elimina esse custo e é o padrão REST esperado. |
-| 2 | **Endpoint `GET /admin/bens-materiais/{id}/curadorias`** | Permite listar todo o histórico de curadorias de um bem específico sem precisar varrer a listagem geral filtrada por ID. Útil para a linha do tempo do sítio. |
-| 3 | **Validação de `geojson` no update de BemMaterial** | O campo `geojson` aceita qualquer JSON. Validar se é um GeoJSON válido (tipo `Point`, `Polygon`, etc.) e atualizar `geom` automaticamente no `PUT /mobile/bens-materiais/{id}` tornaria o dado geoespacial mais confiável. |
-| 4 | **Criação de Auditoria no `PUT /mobile/bens-materiais/{id}`** | Atualizações diretas via mobile não geram auditoria. Qualquer alteração em um bem deveria deixar rastro, independentemente de passar por curadoria. |
+| 1 | **Validação de `geojson` no update de BemMaterial** | O campo `geojson` aceita qualquer JSON. Validar se é um GeoJSON válido (tipo `Point`, `Polygon`, etc.) e atualizar `geom` automaticamente no `PUT /mobile/bens-materiais/{id}` tornaria o dado geoespacial mais confiável. |
+| 2 | **Criação de Auditoria no `PUT /mobile/bens-materiais/{id}`** | Atualizações diretas via mobile não geram auditoria. Qualquer alteração em um bem deveria deixar rastro, independentemente de passar por curadoria. |
 
 ### Média prioridade
 
 | # | Funcionalidade | Motivação |
 |---|---|---|
-| 5 | **Paginação com cursor em `/admin/auditorias`** | Paginação por offset degrada com tabelas grandes (OFFSET 5000 escaneia 5000 linhas antes de retornar). Cursor-based pagination (ex.: `?after=uuid`) é O(log n) com índice. |
-| 6 | **Filtros adicionais em `/admin/auditorias`** | Suporte a `operacao` (Inserção, Alteração) e `data_inicio`/`data_fim` para facilitar investigações de auditoria sem precisar baixar todas as páginas. |
-| 7 | **Endpoint de exportação de auditoria** | `GET /admin/auditorias/export?format=csv` para geração de relatórios formais exigidos por processos de conformidade e publicação científica. |
-| 8 | **Upload de mídias na API** | Hoje `dados_coletados.midias` armazena apenas URLs externas. Um endpoint de upload (`POST /mobile/coletas/{id}/midias`) com armazenamento em S3 ou disco local centralizaria a gestão de evidências fotográficas. |
+| 3 | **Paginação com cursor em `/admin/auditorias`** | Paginação por offset degrada com tabelas grandes (OFFSET 5000 escaneia 5000 linhas antes de retornar). Cursor-based pagination (ex.: `?after=uuid`) é O(log n) com índice. |
+| 4 | **Filtros adicionais em `/admin/auditorias`** | Suporte a `operacao` (Inserção, Alteração) e `data_inicio`/`data_fim` para facilitar investigações de auditoria sem precisar baixar todas as páginas. |
+| 5 | **Endpoint de exportação de auditoria** | `GET /admin/auditorias/export?format=csv` para geração de relatórios formais exigidos por processos de conformidade e publicação científica. |
+| 6 | **Upload de mídias na API** | Hoje `dados_coletados.midias` armazena apenas URLs externas. Um endpoint de upload (`POST /mobile/coletas/{id}/midias`) com armazenamento em S3 ou disco local centralizaria a gestão de evidências fotográficas. |
 
 ### Baixa prioridade / exploratória
 
 | # | Funcionalidade | Motivação |
 |---|---|---|
-| 9 | **Evento/webhook na aprovação de curadoria** | Ao aprovar uma curadoria, o `web_coletum` invalida o cache manualmente via `invalidate_bens_cache()`. Um evento (`CuradoriaAprovada`) que dispara um webhook ou SSE eliminaria o acoplamento e funcionaria para qualquer cliente. |
-| 10 | **Versionamento de BemMaterial** | Guardar um snapshot completo a cada aprovação de curadoria permitiria consultar o estado exato do sítio em qualquer ponto do tempo, não apenas o anterior imediato. |
-| 11 | **Busca full-text em bens materiais** | `GET /mobile/bens-materiais?q=pedra+furada` usando `tsvector`/`tsquery` do PostgreSQL para buscas textuais eficientes em `nome_bem`, `nomes_populares` e `descricao_atualizacao`. |
-| 12 | **Rate limiting granular nas rotas admin** | As rotas `admin` não têm throttle configurado. Adicionar limites por perfil (ex.: 120 req/min para curador, 300 para admin) previne uso indevido e sobrecarga acidental. |
+| 7 | **Evento/webhook na aprovação de curadoria** | Ao aprovar uma curadoria, o `web_coletum` invalida o cache manualmente via `invalidate_bens_cache()`. Um evento (`CuradoriaAprovada`) que dispara um webhook ou SSE eliminaria o acoplamento e funcionaria para qualquer cliente. |
+| 8 | **Versionamento de BemMaterial** | Guardar um snapshot completo a cada aprovação de curadoria permitiria consultar o estado exato do sítio em qualquer ponto do tempo, não apenas o anterior imediato. |
+| 9 | **Busca full-text em bens materiais** | `GET /mobile/bens-materiais?q=pedra+furada` usando `tsvector`/`tsquery` do PostgreSQL para buscas textuais eficientes em `nome_bem`, `nomes_populares` e `descricao_atualizacao`. |
+| 10 | **Rate limiting granular nas rotas admin** | As rotas `admin` não têm throttle configurado. Adicionar limites por perfil (ex.: 120 req/min para curador, 300 para admin) previne uso indevido e sobrecarga acidental. |
 
 ---
 
@@ -479,6 +484,6 @@ A integridade dos dados é uma premissa inegociável: o módulo de auditoria gar
 
 <div align="center">
 
-Desenvolvido por **[Maria Fernanda Rodrigues Costa](https://github.com/mfeeee)**
+Desenvolvido por **[Maria Fernanda Rodrigues Costa](https://github.com/mfeeee)** e **[Ryan Rodrigues](https://github.com/Ryan-auchi)**
 
 </div>
