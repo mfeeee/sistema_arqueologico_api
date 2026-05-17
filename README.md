@@ -484,6 +484,6 @@ A integridade dos dados é uma premissa inegociável: o módulo de auditoria gar
 
 <div align="center">
 
-Desenvolvido por **[Maria Fernanda Rodrigues Costa](https://github.com/mfeeee)**
+Desenvolvido por **[Maria Fernanda Rodrigues Costa](https://github.com/mfeeee)** e **[Ryan Rodrigues Silva](https://github.com/Ryan-auchi)**
 
 </div>
