@@ -33,15 +33,15 @@ class BemMaterialController extends Controller
         BemMaterial::withoutEvents(fn () => $bemMaterial->update(['publicado' => $novo]));
 
         Auditoria::create([
-            'usuario_id'    => $request->user()->id,
+            'usuario_id' => $request->user()->id,
             'entidade_tipo' => BemMaterial::class,
-            'entidade_id'   => $bemMaterial->id,
-            'curadoria_id'  => null,
-            'operacao'      => 'Alteração',
-            'meio'          => 'Manual',
-            'data_hora'     => now(),
+            'entidade_id' => $bemMaterial->id,
+            'curadoria_id' => null,
+            'operacao' => 'Alteração',
+            'meio' => 'Manual',
+            'data_hora' => now(),
             'valor_anterior' => ['publicado' => $anterior],
-            'valor_novo'     => ['publicado' => $novo],
+            'valor_novo' => ['publicado' => $novo],
         ]);
 
         return response()->json($bemMaterial->fresh(['midias', 'responsavel']));
