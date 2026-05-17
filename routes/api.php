@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditoriaController;
+use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
 use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Mobile\BemMaterialController;
@@ -31,7 +32,7 @@ Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
 
     // Bens Materiais
     Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
-    Route::apiResource('bens-materiais', BemMaterialController::class);
+    Route::apiResource('bens-materiais', BemMaterialController::class)->only(['index', 'show']);
 
     // Fotos
     Route::post('fotos', [FotoUploadController::class, 'store']);
@@ -44,6 +45,10 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     Route::get('curadorias/{curadoria}', [CuradoriaController::class, 'show']);
     Route::patch('curadorias/{curadoria}/avaliar', [CuradoriaController::class, 'avaliar']);
     Route::get('bens-materiais/{bemMaterial}/curadorias', [CuradoriaController::class, 'porBemMaterial']);
+
+    // Bens Materiais (admin)
+    Route::patch('bens-materiais/{bemMaterial}/publicar', [AdminBemMaterialController::class, 'publicar']);
+    Route::delete('bens-materiais/{bemMaterial}', [AdminBemMaterialController::class, 'destroy']);
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);

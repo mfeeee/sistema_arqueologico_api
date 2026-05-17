@@ -79,9 +79,10 @@ class CuradoriaController extends Controller
                 $anterior = $this->snapshot($bem);
 
                 $campos = $this->resolverCampos($request, $curadoria);
+                $campos['publicado'] = (bool) $request->input('publicado', false);
 
                 if (! empty($campos)) {
-                    $bem->update($campos);
+                    BemMaterial::withoutEvents(fn () => $bem->update($campos));
 
                     if (array_key_exists('latitude', $campos) || array_key_exists('longitude', $campos)) {
                         $bem->refresh();
@@ -212,7 +213,7 @@ class CuradoriaController extends Controller
         $coleta = $curadoria->coleta;
         $dados = is_array($coleta->dados_coletados) ? $coleta->dados_coletados : [];
 
-        $bem = BemMaterial::create([
+        $bem = BemMaterial::withoutEvents(fn () => BemMaterial::create([
             'coleta_id' => $coleta->id,
             'nome_bem' => $coleta->nome_bem,
             'natureza' => $coleta->natureza_bem?->value,
@@ -229,7 +230,7 @@ class CuradoriaController extends Controller
             'descricao_atualizacao' => $dados['descricao_atualizacao'] ?? $dados['descricao'] ?? null,
             'publicado' => $publicado,
             'ano_registro' => Carbon::now()->year,
-        ]);
+        ]));
 
         DB::statement(
             'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
