@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BemMaterial\StoreBemMaterialRequest;
 use App\Models\BemMaterial;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,42 +70,17 @@ class BemMaterialController extends Controller
         return response()->json($bens);
     }
 
-    public function store(StoreBemMaterialRequest $request): JsonResponse
-    {
-        $bem = BemMaterial::create($request->validated());
-
-        return response()->json($bem, 201);
-    }
-
     public function show(Request $request, BemMaterial $bemMaterial): JsonResponse
     {
-        $this->authorize('view', $bemMaterial);
-
         $bemMaterialId = basename($request->path());
 
         $bemMaterial = BemMaterial::query()
             ->with(['midias', 'responsavel'])
             ->findOrFail($bemMaterialId);
 
-        return response()->json($bemMaterial);
-    }
-
-    public function update(StoreBemMaterialRequest $request, BemMaterial $bemMaterial): JsonResponse
-    {
-        $this->authorize('update', $bemMaterial);
-
-        $bemMaterial->update($request->validated());
+        $this->authorize('view', $bemMaterial);
 
         return response()->json($bemMaterial);
-    }
-
-    public function destroy(Request $request, BemMaterial $bemMaterial): JsonResponse
-    {
-        $this->authorize('delete', $bemMaterial);
-
-        $bemMaterial->update(['deletado_em' => now()]);
-
-        return response()->json(null, 204);
     }
 
     private function resolvePublicadoFilter(Request $request): array

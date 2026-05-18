@@ -30,6 +30,25 @@ class CuradoriaController extends Controller
         return response()->json($curadorias);
     }
 
+    public function show(Curadoria $curadoria): JsonResponse
+    {
+        $this->authorize('view', $curadoria);
+
+        return response()->json($curadoria->load(['coleta', 'bemMaterial', 'curador']));
+    }
+
+    public function porBemMaterial(BemMaterial $bemMaterial): JsonResponse
+    {
+        $this->authorize('view', $bemMaterial);
+
+        $curadorias = Curadoria::with(['coleta', 'curador'])
+            ->where('bem_material_id', $bemMaterial->id)
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        return response()->json($curadorias);
+    }
+
     public function avaliar(AvaliarCuradoriaRequest $request, Curadoria $curadoria): JsonResponse
     {
         $this->authorize('avaliar', $curadoria);
@@ -60,9 +79,10 @@ class CuradoriaController extends Controller
                 $anterior = $this->snapshot($bem);
 
                 $campos = $this->resolverCampos($request, $curadoria);
+                $campos['publicado'] = (bool) $request->input('publicado', false);
 
                 if (! empty($campos)) {
-                    $bem->update($campos);
+                    BemMaterial::withoutEvents(fn () => $bem->update($campos));
 
                     if (array_key_exists('latitude', $campos) || array_key_exists('longitude', $campos)) {
                         $bem->refresh();
@@ -193,7 +213,7 @@ class CuradoriaController extends Controller
         $coleta = $curadoria->coleta;
         $dados = is_array($coleta->dados_coletados) ? $coleta->dados_coletados : [];
 
-        $bem = BemMaterial::create([
+        $bem = BemMaterial::withoutEvents(fn () => BemMaterial::create([
             'coleta_id' => $coleta->id,
             'nome_bem' => $coleta->nome_bem,
             'natureza' => $coleta->natureza_bem?->value,
@@ -210,7 +230,7 @@ class CuradoriaController extends Controller
             'descricao_atualizacao' => $dados['descricao_atualizacao'] ?? $dados['descricao'] ?? null,
             'publicado' => $publicado,
             'ano_registro' => Carbon::now()->year,
-        ]);
+        ]));
 
         DB::statement(
             'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
