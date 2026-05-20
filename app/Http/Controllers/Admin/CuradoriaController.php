@@ -22,10 +22,15 @@ class CuradoriaController extends Controller
 
         $status = $request->filled('status') ? $request->status : 'pendente';
 
-        $curadorias = Curadoria::with(['coleta', 'bemMaterial', 'curador'])
+        $curadorias = Curadoria::with(['bemMaterial', 'curador'])
             ->where('status', $status)
             ->orderBy('created_at')
             ->paginate(20);
+
+        // Carrega a entidade relacionada de acordo com o tipo de cada curadoria
+        $curadorias->getCollection()->transform(
+            fn (Curadoria $c) => $this->carregarEntidade($c)
+        );
 
         return response()->json($curadorias);
     }
@@ -34,17 +39,23 @@ class CuradoriaController extends Controller
     {
         $this->authorize('view', $curadoria);
 
-        return response()->json($curadoria->load(['coleta', 'bemMaterial', 'curador']));
+        $curadoria->load(['bemMaterial', 'curador']);
+
+        return response()->json($this->carregarEntidade($curadoria));
     }
 
     public function porBemMaterial(BemMaterial $bemMaterial): JsonResponse
     {
         $this->authorize('view', $bemMaterial);
 
-        $curadorias = Curadoria::with(['coleta', 'curador'])
+        $curadorias = Curadoria::with(['curador'])
             ->where('bem_material_id', $bemMaterial->id)
             ->orderByDesc('created_at')
             ->paginate(20);
+
+        $curadorias->getCollection()->transform(
+            fn (Curadoria $c) => $this->carregarEntidade($c)
+        );
 
         return response()->json($curadorias);
     }
@@ -54,74 +65,102 @@ class CuradoriaController extends Controller
         $this->authorize('avaliar', $curadoria);
 
         DB::transaction(function () use ($request, $curadoria) {
-            $acao = AcaoResultanteCuradoria::from($request->acao_resultante);
-            $bemMaterialId = null;
+            match ($curadoria->entidade_tipo) {
+                'coleta' => $this->avaliarColeta($request, $curadoria),
+                // 'submissao_artigo' será implementado em feat/artigos-cientificos
+                default => null,
+            };
+        });
 
-            if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
-                $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false));
-                $bemMaterialId = $bem->id;
+        return response()->json($this->carregarEntidade($curadoria->fresh(['bemMaterial'])));
+    }
+
+    /**
+     * Carrega a entidade relacionada na curadoria com base no entidade_tipo
+     * e a embute no modelo como atributo nomeado (ex.: 'coleta').
+     * Mantém compatibilidade com o web que lê raw.get("coleta").
+     */
+    private function carregarEntidade(Curadoria $curadoria): Curadoria
+    {
+        match ($curadoria->entidade_tipo) {
+            'coleta' => $curadoria->setRelation('coleta', $curadoria->coleta),
+            default => null,
+        };
+
+        return $curadoria;
+    }
+
+    /**
+     * Processa a avaliação de curadorias do tipo 'coleta'.
+     * Lógica extraída de avaliar() para permitir o dispatcher polimórfico.
+     */
+    private function avaliarColeta(AvaliarCuradoriaRequest $request, Curadoria $curadoria): void
+    {
+        $acao = AcaoResultanteCuradoria::from($request->acao_resultante);
+        $bemMaterialId = null;
+
+        if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
+            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false));
+            $bemMaterialId = $bem->id;
+
+            Auditoria::create([
+                'usuario_id' => $request->user()->id,
+                'entidade_tipo' => BemMaterial::class,
+                'entidade_id' => $bem->id,
+                'curadoria_id' => $curadoria->id,
+                'operacao' => 'Inserção',
+                'meio' => 'Curadoria',
+                'data_hora' => now(),
+                'valor_anterior' => null,
+                'valor_novo' => $this->snapshot($bem),
+            ]);
+
+        } elseif ($acao === AcaoResultanteCuradoria::ATUALIZAR_SITIO) {
+            $bem = BemMaterial::findOrFail($request->bem_material_id);
+            $bemMaterialId = $bem->id;
+            $anterior = $this->snapshot($bem);
+
+            $campos = $this->resolverCampos($request, $curadoria);
+            $campos['publicado'] = (bool) $request->input('publicado', false);
+
+            if (! empty($campos)) {
+                BemMaterial::withoutEvents(fn () => $bem->update($campos));
+
+                if (array_key_exists('latitude', $campos) || array_key_exists('longitude', $campos)) {
+                    $bem->refresh();
+                    DB::statement(
+                        'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                        [$bem->longitude, $bem->latitude, $bem->id]
+                    );
+                }
 
                 Auditoria::create([
                     'usuario_id' => $request->user()->id,
                     'entidade_tipo' => BemMaterial::class,
                     'entidade_id' => $bem->id,
                     'curadoria_id' => $curadoria->id,
-                    'operacao' => 'Inserção',
+                    'operacao' => 'Alteração',
                     'meio' => 'Curadoria',
                     'data_hora' => now(),
-                    'valor_anterior' => null,
-                    'valor_novo' => $this->snapshot($bem),
+                    'valor_anterior' => $anterior,
+                    'valor_novo' => array_intersect_key($this->snapshot($bem->fresh()), $campos),
                 ]);
-
-            } elseif ($acao === AcaoResultanteCuradoria::ATUALIZAR_SITIO) {
-                $bem = BemMaterial::findOrFail($request->bem_material_id);
-                $bemMaterialId = $bem->id;
-                $anterior = $this->snapshot($bem);
-
-                $campos = $this->resolverCampos($request, $curadoria);
-                $campos['publicado'] = (bool) $request->input('publicado', false);
-
-                if (! empty($campos)) {
-                    BemMaterial::withoutEvents(fn () => $bem->update($campos));
-
-                    if (array_key_exists('latitude', $campos) || array_key_exists('longitude', $campos)) {
-                        $bem->refresh();
-                        DB::statement(
-                            'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                            [$bem->longitude, $bem->latitude, $bem->id]
-                        );
-                    }
-
-                    Auditoria::create([
-                        'usuario_id' => $request->user()->id,
-                        'entidade_tipo' => BemMaterial::class,
-                        'entidade_id' => $bem->id,
-                        'curadoria_id' => $curadoria->id,
-                        'operacao' => 'Alteração',
-                        'meio' => 'Curadoria',
-                        'data_hora' => now(),
-                        'valor_anterior' => $anterior,
-                        'valor_novo' => array_intersect_key($this->snapshot($bem->fresh()), $campos),
-                    ]);
-                }
             }
-            // REJEITAR: $bemMaterialId permanece null
+        }
+        // REJEITAR: $bemMaterialId permanece null
 
-            $curadoria->update([
-                'status' => $request->status,
-                'acao_resultante' => $request->acao_resultante,
-                'bem_material_id' => $bemMaterialId,
-                'data_avaliacao' => now(),
-                'observacao' => $request->observacao,
-                'usuario_id' => $request->user()->id,
-            ]);
+        $curadoria->update([
+            'status' => $request->status,
+            'acao_resultante' => $request->acao_resultante,
+            'bem_material_id' => $bemMaterialId,
+            'data_avaliacao' => now(),
+            'observacao' => $request->observacao,
+            'usuario_id' => $request->user()->id,
+        ]);
 
-            $curadoria->coleta->update([
-                'status_sincronizacao' => StatusColeta::SINCRONIZADO->value,
-            ]);
-        });
-
-        return response()->json($curadoria->fresh(['coleta', 'bemMaterial']));
+        $curadoria->coleta->update([
+            'status_sincronizacao' => StatusColeta::SINCRONIZADO->value,
+        ]);
     }
 
     /**

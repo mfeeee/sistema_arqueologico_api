@@ -7,6 +7,7 @@ enum AcaoResultanteCuradoria: string
     case CRIAR_SITIO = 'criarSitio';
     case ATUALIZAR_SITIO = 'atualizarSitio';
     case REJEITAR = 'rejeitar';
+    case APROVAR = 'aprovar';
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum AcaoResultanteCuradoria: string
             self::CRIAR_SITIO => 'Criar sítio',
             self::ATUALIZAR_SITIO => 'Atualizar sítio',
             self::REJEITAR => 'Rejeitar',
+            self::APROVAR => 'Aprovar',
         };
     }
 }
