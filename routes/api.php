@@ -40,9 +40,10 @@ Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
     // Fotos
     Route::post('fotos', [FotoUploadController::class, 'store']);
 
-    // Artigos científicos — busca por DOI e listagem por bem material
+    // Artigos científicos — busca por DOI, listagem por bem material e colaboradores
     Route::get('artigos-cientificos/buscar-doi', [ArtigoCientificoController::class, 'buscarPorDoi']);
     Route::get('bens-materiais/{bemMaterial}/artigos', [ArtigoCientificoController::class, 'porBemMaterial']);
+    Route::get('bens-materiais/{bemMaterial}/colaboradores', [CuradoriaController::class, 'colaboradores']);
 
     // Submissão de artigos por usuário autenticado
     Route::post('submissoes-artigos', [SubmissaoArtigoController::class, 'store']);

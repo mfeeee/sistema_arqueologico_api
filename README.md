@@ -255,7 +255,35 @@ Authorization: Bearer {token}
 |---|---|---|
 | `GET` | `/api/v1/mobile/artigos-cientificos/buscar-doi` | Busca um artigo já cadastrado pelo DOI |
 | `GET` | `/api/v1/mobile/bens-materiais/{id}/artigos` | Lista artigos vinculados a um bem material |
+| `GET` | `/api/v1/mobile/bens-materiais/{id}/colaboradores` | Lista colaboradores do bem material (coletores + autores de artigos aprovados) |
 | `POST` | `/api/v1/mobile/submissoes-artigos` | Submete um artigo para curadoria, vinculando-o a um bem material |
+
+**Resposta `200 OK` — `GET /api/v1/mobile/bens-materiais/{id}/colaboradores`:**
+
+```json
+{
+  "colaboradores": [
+    {
+      "id": "uuid",
+      "nome": "Maria Fernanda",
+      "email": "mf@arqueologia.test",
+      "classificacao": "arqueologo",
+      "origem": "coleta",
+      "total_contribuicoes": 3
+    },
+    {
+      "id": "uuid",
+      "nome": "Maria Fernanda",
+      "email": "mf@arqueologia.test",
+      "classificacao": "arqueologo",
+      "origem": "artigo",
+      "total_contribuicoes": 1
+    }
+  ]
+}
+```
+
+> Retorna **uma linha por usuário por tipo de contribuição** (`origem: "coleta"` ou `"artigo"`). Um mesmo usuário pode aparecer duas vezes se contribuiu via coleta de campo E via artigo científico. `total_contribuicoes` indica quantas coletas aprovadas (ou vínculos de artigo ativos) esse usuário possui para o bem.
 
 **Query params — `GET /api/v1/mobile/artigos-cientificos/buscar-doi`**
 
@@ -348,7 +376,6 @@ Authorization: Bearer {token}
 |---|---|---|
 | `PATCH` | `/api/v1/admin/bens-materiais/{id}/publicar` | Altera o status de publicação de um bem material e registra auditoria |
 | `DELETE` | `/api/v1/admin/bens-materiais/{id}` | Remove um bem material (soft delete) |
-| `GET` | `/api/v1/admin/bens-materiais/{id}/colaboradores` | Lista colaboradores do bem material (coletores + autores de artigos) |
 
 **Body — `PATCH /api/v1/admin/bens-materiais/{id}/publicar`**
 
@@ -357,33 +384,6 @@ Authorization: Bearer {token}
   "publicado": true   // obrigatório (boolean)
 }
 ```
-
-**Resposta `200 OK` — `GET /api/v1/admin/bens-materiais/{id}/colaboradores`:**
-
-```json
-{
-  "colaboradores": [
-    {
-      "id": "uuid",
-      "nome": "Maria Fernanda",
-      "email": "mf@arqueologia.test",
-      "classificacao": "arqueologo",
-      "origem": "coleta",
-      "total_contribuicoes": 3
-    },
-    {
-      "id": "uuid",
-      "nome": "Maria Fernanda",
-      "email": "mf@arqueologia.test",
-      "classificacao": "arqueologo",
-      "origem": "artigo",
-      "total_contribuicoes": 1
-    }
-  ]
-}
-```
-
-> Retorna **uma linha por usuário por tipo de contribuição** (`origem: "coleta"` ou `"artigo"`). Um mesmo usuário pode aparecer duas vezes se contribuiu via coleta de campo E via submissão de artigo científico. `total_contribuicoes` indica quantas coletas aprovadas (ou artigos aprovados) esse usuário tem para o bem.
 
 #### Artigos Científicos (admin)
 
