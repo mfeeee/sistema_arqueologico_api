@@ -367,14 +367,23 @@ Authorization: Bearer {token}
       "id": "uuid",
       "nome": "Maria Fernanda",
       "email": "mf@arqueologia.test",
-      "perfil": "coletor",
-      "origem": "coleta"          // "coleta" | "artigo"
+      "classificacao": "arqueologo",
+      "origem": "coleta",
+      "total_contribuicoes": 3
+    },
+    {
+      "id": "uuid",
+      "nome": "Maria Fernanda",
+      "email": "mf@arqueologia.test",
+      "classificacao": "arqueologo",
+      "origem": "artigo",
+      "total_contribuicoes": 1
     }
   ]
 }
 ```
 
-> Agrega via `UNION` os coletores que registraram coletas vinculadas ao bem e os autores (usuários) de artigos científicos já aprovados para esse bem. Cada colaborador aparece uma única vez (deduplicado por `user_id`).
+> Retorna **uma linha por usuário por tipo de contribuição** (`origem: "coleta"` ou `"artigo"`). Um mesmo usuário pode aparecer duas vezes se contribuiu via coleta de campo E via submissão de artigo científico. `total_contribuicoes` indica quantas coletas aprovadas (ou artigos aprovados) esse usuário tem para o bem.
 
 #### Artigos Científicos (admin)
 

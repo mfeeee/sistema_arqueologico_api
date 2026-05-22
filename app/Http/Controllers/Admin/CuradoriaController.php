@@ -78,9 +78,10 @@ class CuradoriaController extends Controller
                 u.name AS nome,
                 u.email,
                 u.classificacao,
-                SUM(contrib.total) AS total_contribuicoes
+                contrib.origem,
+                contrib.total AS total_contribuicoes
             FROM (
-                SELECT c.usuario_id, COUNT(*) AS total
+                SELECT c.usuario_id, 'coleta' AS origem, COUNT(*) AS total
                 FROM curadorias cur
                 JOIN coletas c ON c.id = cur.entidade_id AND cur.entidade_tipo = 'coleta'
                 WHERE cur.bem_material_id = ?
@@ -90,15 +91,17 @@ class CuradoriaController extends Controller
 
                 UNION ALL
 
-                SELECT sa.usuario_id, COUNT(*) AS total
-                FROM submissoes_artigos sa
-                WHERE sa.bem_material_id = ?
-                  AND sa.status = 'aprovado'
+                SELECT sa.usuario_id, 'artigo' AS origem, COUNT(DISTINCT abm.id) AS total
+                FROM artigo_bem_material abm
+                JOIN submissoes_artigos sa
+                    ON sa.artigo_id = abm.artigo_id
+                    AND sa.bem_material_id = abm.bem_material_id
+                    AND sa.status = 'aprovado'
+                WHERE abm.bem_material_id = ?
                 GROUP BY sa.usuario_id
             ) contrib
             JOIN users u ON u.id = contrib.usuario_id
-            GROUP BY u.id, u.name, u.email, u.classificacao
-            ORDER BY total_contribuicoes DESC
+            ORDER BY u.name, contrib.origem
         ", [$bemMaterial->id, $bemMaterial->id]);
 
         return response()->json([
