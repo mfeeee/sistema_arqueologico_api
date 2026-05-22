@@ -76,7 +76,8 @@ class CuradoriaAtualizacaoPendenteSeeder extends Seeder
         ]);
 
         Curadoria::create([
-            'coleta_id' => $coleta1->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta1->id,
             'bem_material_id' => $bem1->id,
             'usuario_id' => $coletor->id,
             'status' => 'pendente',
@@ -113,7 +114,8 @@ class CuradoriaAtualizacaoPendenteSeeder extends Seeder
         ]);
 
         Curadoria::create([
-            'coleta_id' => $coleta2->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta2->id,
             'bem_material_id' => $bem2->id,
             'usuario_id' => $coletor->id,
             'status' => 'pendente',
@@ -151,7 +153,8 @@ class CuradoriaAtualizacaoPendenteSeeder extends Seeder
         ]);
 
         Curadoria::create([
-            'coleta_id' => $coleta3->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta3->id,
             'bem_material_id' => $bem3->id,
             'usuario_id' => $coletor->id,
             'status' => 'pendente',
