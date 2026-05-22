@@ -1,13 +1,16 @@
 <?php
 
+use App\Http\Controllers\Admin\ArtigoBemMaterialController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
 use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Mobile\ArtigoCientificoController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
 use App\Http\Controllers\Mobile\FotoUploadController;
 use App\Http\Controllers\Mobile\SincronizacaoController;
+use App\Http\Controllers\Mobile\SubmissaoArtigoController;
 use Illuminate\Support\Facades\Route;
 
 // -- Auth (Publico)
@@ -36,6 +39,13 @@ Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
 
     // Fotos
     Route::post('fotos', [FotoUploadController::class, 'store']);
+
+    // Artigos científicos — busca por DOI e listagem por bem material
+    Route::get('artigos-cientificos/buscar-doi', [ArtigoCientificoController::class, 'buscarPorDoi']);
+    Route::get('bens-materiais/{bemMaterial}/artigos', [ArtigoCientificoController::class, 'porBemMaterial']);
+
+    // Submissão de artigos por usuário autenticado
+    Route::post('submissoes-artigos', [SubmissaoArtigoController::class, 'store']);
 });
 
 // -- Admin/Site
@@ -53,4 +63,10 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);
     Route::get('auditorias/{auditoria}', [AuditoriaController::class, 'show']);
+
+    // Artigos — remoção de vínculo com bem material
+    Route::delete('artigos-bem-material/{artigoBemMaterial}', [ArtigoBemMaterialController::class, 'destroy']);
+
+    // Colaboradores por bem material
+    Route::get('bens-materiais/{bemMaterial}/colaboradores', [CuradoriaController::class, 'colaboradores']);
 });

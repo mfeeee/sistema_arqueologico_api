@@ -6,9 +6,12 @@ use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\StatusColeta;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Curadoria\AvaliarCuradoriaRequest;
+use App\Models\ArtigoBemMaterial;
+use App\Models\ArtigoCientifico;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
 use App\Models\Curadoria;
+use App\Models\SubmissaoArtigo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -60,6 +63,50 @@ class CuradoriaController extends Controller
         return response()->json($curadorias);
     }
 
+    /**
+     * Lista todos os usuários que contribuíram com dados aprovados para um bem material.
+     * Agrega coletas aprovadas e submissões de artigos aprovadas.
+     * GET /admin/bens-materiais/{id}/colaboradores
+     */
+    public function colaboradores(BemMaterial $bemMaterial): JsonResponse
+    {
+        $this->authorize('view', $bemMaterial);
+
+        $colaboradores = DB::select("
+            SELECT
+                u.id,
+                u.name AS nome,
+                u.email,
+                u.classificacao,
+                SUM(contrib.total) AS total_contribuicoes
+            FROM (
+                SELECT c.usuario_id, COUNT(*) AS total
+                FROM curadorias cur
+                JOIN coletas c ON c.id = cur.entidade_id AND cur.entidade_tipo = 'coleta'
+                WHERE cur.bem_material_id = ?
+                  AND cur.status = 'aprovado'
+                  AND cur.acao_resultante IN ('criarSitio', 'atualizarSitio')
+                GROUP BY c.usuario_id
+
+                UNION ALL
+
+                SELECT sa.usuario_id, COUNT(*) AS total
+                FROM submissoes_artigos sa
+                WHERE sa.bem_material_id = ?
+                  AND sa.status = 'aprovado'
+                GROUP BY sa.usuario_id
+            ) contrib
+            JOIN users u ON u.id = contrib.usuario_id
+            GROUP BY u.id, u.name, u.email, u.classificacao
+            ORDER BY total_contribuicoes DESC
+        ", [$bemMaterial->id, $bemMaterial->id]);
+
+        return response()->json([
+            'bem_material_id' => $bemMaterial->id,
+            'colaboradores' => $colaboradores,
+        ]);
+    }
+
     public function avaliar(AvaliarCuradoriaRequest $request, Curadoria $curadoria): JsonResponse
     {
         $this->authorize('avaliar', $curadoria);
@@ -67,7 +114,7 @@ class CuradoriaController extends Controller
         DB::transaction(function () use ($request, $curadoria) {
             match ($curadoria->entidade_tipo) {
                 'coleta' => $this->avaliarColeta($request, $curadoria),
-                // 'submissao_artigo' será implementado em feat/artigos-cientificos
+                'submissao_artigo' => $this->avaliarSubmissaoArtigo($request, $curadoria),
                 default => null,
             };
         });
@@ -84,6 +131,10 @@ class CuradoriaController extends Controller
     {
         match ($curadoria->entidade_tipo) {
             'coleta' => $curadoria->setRelation('coleta', $curadoria->coleta),
+            'submissao_artigo' => $curadoria->setRelation(
+                'submissao_artigo',
+                SubmissaoArtigo::with(['bemMaterial', 'artigo'])->find($curadoria->entidade_id)
+            ),
             default => null,
         };
 
@@ -160,6 +211,107 @@ class CuradoriaController extends Controller
 
         $curadoria->coleta->update([
             'status_sincronizacao' => StatusColeta::SINCRONIZADO->value,
+        ]);
+    }
+
+    /**
+     * Processa a avaliação de curadorias do tipo 'submissao_artigo'.
+     *
+     * Cenário A — artigo_id preenchido (DOI já existia):
+     *   Cria apenas o vínculo ArtigoBemMaterial. Auditoria aponta para o vínculo.
+     *
+     * Cenário B — artigo_id nulo (DOI novo):
+     *   Cria ArtigoCientifico e depois o vínculo. Auditoria aponta para o artigo.
+     */
+    private function avaliarSubmissaoArtigo(AvaliarCuradoriaRequest $request, Curadoria $curadoria): void
+    {
+        /** @var SubmissaoArtigo $submissao */
+        $submissao = SubmissaoArtigo::findOrFail($curadoria->entidade_id);
+
+        if ($request->acao_resultante === AcaoResultanteCuradoria::APROVAR->value) {
+            if ($submissao->artigo_id) {
+                // Cenário A: artigo já existe, cria só o vínculo
+                $vinculo = ArtigoBemMaterial::create([
+                    'artigo_id' => $submissao->artigo_id,
+                    'bem_material_id' => $submissao->bem_material_id,
+                    'tipo_mencao' => $submissao->tipo_mencao,
+                    'trecho_relevante' => $submissao->trecho_relevante,
+                ]);
+
+                Auditoria::create([
+                    'usuario_id' => $request->user()->id,
+                    'entidade_tipo' => ArtigoBemMaterial::class,
+                    'entidade_id' => $vinculo->id,
+                    'curadoria_id' => $curadoria->id,
+                    'operacao' => 'Inserção',
+                    'meio' => 'Curadoria',
+                    'data_hora' => now(),
+                    'valor_anterior' => null,
+                    'valor_novo' => [
+                        'artigo_id' => $vinculo->artigo_id,
+                        'bem_material_id' => $vinculo->bem_material_id,
+                        'tipo_mencao' => $submissao->tipo_mencao,
+                        'trecho_relevante' => $submissao->trecho_relevante,
+                    ],
+                ]);
+            } else {
+                // Cenário B: DOI novo, cria o artigo e depois o vínculo
+                $artigo = ArtigoCientifico::create([
+                    'adicionado_por' => $request->user()->id,
+                    'titulo' => $submissao->titulo,
+                    'doi' => $submissao->doi,
+                    'link_acesso' => $submissao->link_acesso,
+                    'autores' => $submissao->autores,
+                    'ano_publicacao' => $submissao->ano_publicacao,
+                    'periodico' => $submissao->periodico,
+                    'idioma' => $submissao->idioma ?? 'pt',
+                    'resumo' => $submissao->resumo,
+                    'verificado' => true,
+                ]);
+
+                ArtigoBemMaterial::create([
+                    'artigo_id' => $artigo->id,
+                    'bem_material_id' => $submissao->bem_material_id,
+                    'tipo_mencao' => $submissao->tipo_mencao,
+                    'trecho_relevante' => $submissao->trecho_relevante,
+                ]);
+
+                Auditoria::create([
+                    'usuario_id' => $request->user()->id,
+                    'entidade_tipo' => ArtigoCientifico::class,
+                    'entidade_id' => $artigo->id,
+                    'curadoria_id' => $curadoria->id,
+                    'operacao' => 'Inserção',
+                    'meio' => 'Curadoria',
+                    'data_hora' => now(),
+                    'valor_anterior' => null,
+                    'valor_novo' => [
+                        'id' => $artigo->id,
+                        'titulo' => $artigo->titulo,
+                        'doi' => $artigo->doi,
+                        'autores' => $artigo->autores,
+                        'ano_publicacao' => $artigo->ano_publicacao,
+                        'bem_material_id' => $submissao->bem_material_id,
+                        'tipo_mencao' => $submissao->tipo_mencao,
+                    ],
+                ]);
+
+                // Atualiza a submissão com o artigo criado para manter rastreabilidade
+                $submissao->update(['artigo_id' => $artigo->id]);
+            }
+
+            $submissao->update(['status' => 'aprovado']);
+        } else {
+            // REJEITAR
+            $submissao->update(['status' => 'rejeitado']);
+        }
+
+        $curadoria->update([
+            'status' => $request->status,
+            'acao_resultante' => $request->acao_resultante,
+            'data_avaliacao' => now(),
+            'observacao' => $request->observacao,
+            'usuario_id' => $request->user()->id,
         ]);
     }
 
