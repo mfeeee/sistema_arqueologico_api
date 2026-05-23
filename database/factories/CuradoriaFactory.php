@@ -22,11 +22,9 @@ class CuradoriaFactory extends Factory
      */
     public function definition(): array
     {
-        $coleta = Coleta::factory()->create();
-
         return [
             'entidade_tipo' => 'coleta',
-            'entidade_id' => $coleta->id,
+            'entidade_id' => Coleta::factory(),
             'bem_material_id' => BemMaterial::factory(),
             'usuario_id' => User::factory(),
             'status' => StatusCuradoria::PENDENTE,
