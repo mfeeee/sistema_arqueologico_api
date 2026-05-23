@@ -139,9 +139,9 @@ class ArtigoCientificoSeeder extends Seeder
 
             // Resolve qual usuário faz a submissão
             $submissor = match ($dadosArtigo['submissor']) {
-                'admin'   => $admin,
+                'admin' => $admin,
                 'curador' => $curador,
-                default   => $coletor,
+                default => $coletor,
             };
 
             $artigo = ArtigoCientifico::create([
@@ -265,8 +265,8 @@ class ArtigoCientificoSeeder extends Seeder
 
             $submissorB = match ($dados['submissor']) {
                 'curador' => $curador,
-                'admin'   => $admin,
-                default   => $coletor,
+                'admin' => $admin,
+                default => $coletor,
             };
 
             $submissao = SubmissaoArtigo::create([

@@ -110,7 +110,6 @@ class CuradoriaController extends Controller
         ]);
     }
 
-
     public function avaliar(AvaliarCuradoriaRequest $request, Curadoria $curadoria): JsonResponse
     {
         $this->authorize('avaliar', $curadoria);
