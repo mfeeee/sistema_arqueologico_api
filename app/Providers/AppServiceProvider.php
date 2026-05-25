@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\ArtigoBemMaterial;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
 use App\Models\Curadoria;
+use App\Policies\ArtigoBemMaterialPolicy;
 use App\Policies\AuditoriaPolicy;
 use App\Policies\BemMaterialPolicy;
 use App\Policies\ColetaPolicy;
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         BemMaterial::class => BemMaterialPolicy::class,
         Curadoria::class => CuradoriaPolicy::class,
         Auditoria::class => AuditoriaPolicy::class,
+        ArtigoBemMaterial::class => ArtigoBemMaterialPolicy::class,
     ];
 
     /**

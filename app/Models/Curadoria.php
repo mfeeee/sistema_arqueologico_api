@@ -17,7 +17,8 @@ class Curadoria extends Model
     protected $table = 'curadorias';
 
     protected $fillable = [
-        'coleta_id',
+        'entidade_tipo',
+        'entidade_id',
         'bem_material_id',
         'usuario_id',
         'status',
@@ -35,9 +36,13 @@ class Curadoria extends Model
         ];
     }
 
+    /**
+     * Retorna a coleta vinculada quando entidade_tipo = 'coleta'.
+     * Usa entidade_id como FK após a migração polimórfica.
+     */
     public function coleta(): BelongsTo
     {
-        return $this->belongsTo(Coleta::class);
+        return $this->belongsTo(Coleta::class, 'entidade_id');
     }
 
     public function bemMaterial(): BelongsTo

@@ -36,6 +36,9 @@ Módulo de revisão técnica que permite que especialistas avaliem e validem os 
 ### Auditoria de Dados
 Registro imutável de todas as operações críticas realizadas no sistema. Cada alteração relevante gera uma entrada de auditoria, assegurando o rastreamento completo das ações para fins de pesquisa, conformidade e integridade científica.
 
+### Artigos Científicos
+Vincula publicações científicas a sítios arqueológicos do acervo. Pesquisadores submetem artigos (com ou sem DOI) pelo aplicativo móvel; cada submissão entra no fluxo de curadoria para aprovação antes de ser associada ao bem material correspondente. O módulo evita duplicidade de artigos já cadastrados: se o artigo já existir, apenas o vínculo `artigo_bem_material` é criado.
+
 ### Sincronização Offline (Mobile)
 Endpoint dedicado (`POST /api/sync`) para recepção de lotes de dados enviados pelo aplicativo móvel após períodos sem conectividade, garantindo que trabalhos de campo em áreas remotas não sejam perdidos.
 
@@ -136,6 +139,7 @@ Os seeders são executados na seguinte ordem e cobrem os seguintes cenários:
 | `ColetaECuradoriaSeeder` | **A** — 3 pendentes de criação de sítio · **B** — 3 aprovados `criarSitio` + auditoria Inserção · **C** — 3 aprovados `atualizarSitio` preenchendo campo null · **D** — 3 aprovados `atualizarSitio` modificando campo existente · **E** — 3 aprovados `atualizarSitio` múltiplos campos · **F** — 3 rejeitados |
 | `AuditoriaManualSeeder` | Cenário G: auditorias com `meio = Manual` |
 | `CuradoriaAtualizacaoPendenteSeeder` | 3 curadorias pendentes vinculadas a bens existentes para testar o fluxo de `atualizarSitio` interativamente |
+| `ArtigoCientificoSeeder` | **A** — 1 submissão aprovada onde o artigo já existia (só cria `artigo_bem_material`) · **B** — 1 submissão pendente com artigo novo (aguarda curadoria) · **C** — 1 submissão pendente sem DOI (artigo só com título/autores) · **D** — 1 submissão rejeitada |
 
 **Adicionar apenas as pendentes de atualização (sem recriar o banco):**
 
@@ -245,6 +249,93 @@ Authorization: Bearer {token}
 | `tipo` | `string` | ❌ | Filtra por tipo de bem |
 | `publicado` | `string` | ❌ | Filtro de publicação: `true`, `false` ou `all` (padrão: `true`) |
 
+#### Artigos Científicos
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/mobile/artigos-cientificos/buscar-doi` | Busca um artigo já cadastrado pelo DOI |
+| `GET` | `/api/v1/mobile/bens-materiais/{id}/artigos` | Lista artigos vinculados a um bem material |
+| `GET` | `/api/v1/mobile/bens-materiais/{id}/colaboradores` | Lista colaboradores do bem material (coletores + autores de artigos aprovados) |
+| `POST` | `/api/v1/mobile/submissoes-artigos` | Submete um artigo para curadoria, vinculando-o a um bem material |
+
+**Resposta `200 OK` — `GET /api/v1/mobile/bens-materiais/{id}/colaboradores`:**
+
+```json
+{
+  "colaboradores": [
+    {
+      "id": "uuid",
+      "nome": "Maria Fernanda",
+      "email": "mf@arqueologia.test",
+      "classificacao": "arqueologo",
+      "origem": "coleta",
+      "total_contribuicoes": 3
+    },
+    {
+      "id": "uuid",
+      "nome": "Maria Fernanda",
+      "email": "mf@arqueologia.test",
+      "classificacao": "arqueologo",
+      "origem": "artigo",
+      "total_contribuicoes": 1
+    }
+  ]
+}
+```
+
+> Retorna **uma linha por usuário por tipo de contribuição** (`origem: "coleta"` ou `"artigo"`). Um mesmo usuário pode aparecer duas vezes se contribuiu via coleta de campo E via artigo científico. `total_contribuicoes` indica quantas coletas aprovadas (ou vínculos de artigo ativos) esse usuário possui para o bem.
+
+**Query params — `GET /api/v1/mobile/artigos-cientificos/buscar-doi`**
+
+| Parâmetro | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `doi` | `string` | ✅ | DOI do artigo (ex: `10.1016/j.quaint.2021.01.001`) |
+
+**Resposta `200 OK` — artigo encontrado:**
+
+```json
+{
+  "data": {
+    "id": "uuid",
+    "doi": "10.1016/j.quaint.2021.01.001",
+    "titulo": "...",
+    "autores": "...",
+    "ano_publicacao": 2021,
+    "periodico": "...",
+    "idioma": "pt",
+    "resumo": "..."
+  }
+}
+```
+
+**Resposta `404 Not Found` — artigo não cadastrado:**
+
+```json
+{ "message": "Artigo não encontrado." }
+```
+
+**Body — `POST /api/v1/mobile/submissoes-artigos`**
+
+```json
+{
+  "bem_material_id": "uuid-do-bem",   // obrigatório
+  "tipo_mencao": "estudo_principal",  // obrigatório (ver TipoMencaoArtigo)
+  "artigo_id": "uuid-do-artigo",      // opcional: se o artigo já existe no banco
+  "doi": "10.1016/...",               // opcional: quando artigo_id não informado
+  "titulo": "Título do artigo",       // opcional (mas recomendado sem DOI)
+  "autores": "Silva, J.; Costa, M.",  // opcional
+  "ano_publicacao": 2024,             // opcional (integer)
+  "periodico": "Journal of ...",      // opcional
+  "idioma": "pt",                     // opcional (padrão: "pt")
+  "resumo": "Resumo do artigo...",    // opcional
+  "link_acesso": "https://...",       // opcional
+  "trecho_relevante": "..."           // opcional: trecho que menciona o bem
+}
+```
+
+> **Valores válidos para `tipo_mencao` (`TipoMencaoArtigo`):**
+> `estudo_principal` · `referencia_geografica` · `citacao_comparativa` · `dado_secundario` · `mencao_simples`
+
 #### Sincronização
 
 | Método | Endpoint | Descrição |
@@ -294,6 +385,12 @@ Authorization: Bearer {token}
 }
 ```
 
+#### Artigos Científicos (admin)
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `DELETE` | `/api/v1/admin/artigos-bem-material/{id}` | Remove o vínculo entre um artigo e um bem material (sem excluir o artigo) |
+
 #### Curadorias
 
 | Método | Endpoint | Descrição |
@@ -314,7 +411,7 @@ Authorization: Bearer {token}
 ```json
 {
   "status": "aprovado",                      // obrigatório: aprovado | rejeitado
-  "acao_resultante": "criarSitio",           // obrigatório: criarSitio | atualizarSitio | rejeitar
+  "acao_resultante": "criarSitio",           // obrigatório: criarSitio | atualizarSitio | aprovar_artigo | rejeitar
   "bem_material_id": "uuid-do-bem",          // obrigatório se acao_resultante = atualizarSitio
   "observacao": "Registro validado.",        // opcional
   "publicado": false,                        // opcional (bool): define publicado no bem criado/atualizado
@@ -326,13 +423,16 @@ Authorization: Bearer {token}
 }
 ```
 
+> A curadoria é **polimórfica**: o campo `entidade_tipo` indica se a entrada é uma `coleta` ou uma `submissao_artigo`. O dispatcher no controller roteia automaticamente para o handler correto com base nesse tipo — ações de coleta (`criarSitio`, `atualizarSitio`) só são válidas para curadorias de coleta; `aprovar_artigo` só é válido para curadorias de submissão de artigo.
+
 **Comportamento por `acao_resultante`**
 
-| Valor | Efeito no banco |
-|---|---|
-| `criarSitio` | Cria novo `BemMaterial` com os dados da coleta (incluindo campos de `dados_coletados`). Gera auditoria de **Inserção**. |
-| `atualizarSitio` | Atualiza o `BemMaterial` referenciado por `bem_material_id`. Se `campos` for enviado, aplica somente esses campos; caso contrário, aplica todos os campos não-nulos da coleta. Atualiza o `geom` PostGIS se latitude ou longitude mudou. Gera auditoria de **Alteração** com snapshot completo em `valor_anterior` e apenas os campos alterados em `valor_novo`. |
-| `rejeitar` | Nenhum `BemMaterial` é criado ou alterado. Nenhuma auditoria de bem é gerada. |
+| Valor | Entidade | Efeito no banco |
+|---|---|---|
+| `criarSitio` | `coleta` | Cria novo `BemMaterial` com os dados da coleta (incluindo campos de `dados_coletados`). Gera auditoria de **Inserção**. |
+| `atualizarSitio` | `coleta` | Atualiza o `BemMaterial` referenciado por `bem_material_id`. Se `campos` for enviado, aplica somente esses campos; caso contrário, aplica todos os campos não-nulos da coleta. Atualiza o `geom` PostGIS se latitude ou longitude mudou. Gera auditoria de **Alteração** com snapshot completo em `valor_anterior` e apenas os campos alterados em `valor_novo`. |
+| `aprovar_artigo` | `submissao_artigo` | Se `artigo_id` da submissão já estiver preenchido, cria apenas o registro `artigo_bem_material` (Cenário A). Caso contrário, cria primeiro o `artigo_cientifico` com os dados da submissão e depois cria o vínculo (Cenário B). |
+| `rejeitar` | ambos | Nenhum `BemMaterial`, `artigo_cientifico` ou `artigo_bem_material` é criado ou alterado. Nenhuma auditoria de bem é gerada. |
 
 > **Campos permitidos em `campos`:** `nome_bem`, `nomes_populares`, `natureza`, `tipo`, `artefatos`, `meios_acesso`, `uf`, `municipio`, `cep`, `endereco`, `latitude`, `longitude`, `ano_registro`, `descricao_atualizacao`, `publicado`. Chaves não reconhecidas são silenciosamente ignoradas.
 
@@ -462,6 +562,7 @@ Funcionalidades identificadas como necessárias mas ainda não implementadas, or
 | 2 | **Filtros adicionais em `/admin/auditorias`** | Suporte a `operacao` (Inserção, Alteração) e `data_inicio`/`data_fim` para facilitar investigações de auditoria sem precisar baixar todas as páginas. |
 | 3 | **Endpoint de exportação de auditoria** | `GET /admin/auditorias/export?format=csv` para geração de relatórios formais exigidos por processos de conformidade e publicação científica. |
 | 4 | **Upload de mídias na API** | Hoje `dados_coletados.midias` armazena apenas URLs externas. Um endpoint de upload (`POST /mobile/coletas/{id}/midias`) com armazenamento em S3 ou disco local centralizaria a gestão de evidências fotográficas. |
+| 5 | **Busca de artigos por bem material com paginação** | `GET /mobile/bens-materiais/{id}/artigos` retorna todos os artigos sem paginação. Com volumes maiores, adicionar `?page=` e metadados de paginação segue o padrão do restante da API. |
 
 ### Baixa prioridade / exploratória
 

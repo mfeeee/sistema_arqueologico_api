@@ -23,7 +23,8 @@ class CuradoriaFactory extends Factory
     public function definition(): array
     {
         return [
-            'coleta_id' => Coleta::factory(),
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => Coleta::factory(),
             'bem_material_id' => BemMaterial::factory(),
             'usuario_id' => User::factory(),
             'status' => StatusCuradoria::PENDENTE,

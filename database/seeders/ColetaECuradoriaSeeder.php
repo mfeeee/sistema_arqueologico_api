@@ -156,7 +156,8 @@ class ColetaECuradoriaSeeder extends Seeder
             ]);
 
             Curadoria::create([
-                'coleta_id' => $coleta->id,
+                'entidade_tipo' => 'coleta',
+                'entidade_id' => $coleta->id,
                 'bem_material_id' => null,
                 'usuario_id' => $coletor->id,
                 'status' => 'pendente',
@@ -253,7 +254,8 @@ class ColetaECuradoriaSeeder extends Seeder
             $bemNovos[] = $bem;
 
             $curadoria = Curadoria::create([
-                'coleta_id' => $coleta->id,
+                'entidade_tipo' => 'coleta',
+                'entidade_id' => $coleta->id,
                 'bem_material_id' => $bem->id,
                 'usuario_id' => $curador->id,
                 'status' => 'aprovado',
@@ -304,7 +306,8 @@ class ColetaECuradoriaSeeder extends Seeder
         ]);
 
         $curadoriaC1 = Curadoria::create([
-            'coleta_id' => $coletaC1->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coletaC1->id,
             'bem_material_id' => $bemC1->id,
             'usuario_id' => $curador->id,
             'status' => 'aprovado',
@@ -351,7 +354,8 @@ class ColetaECuradoriaSeeder extends Seeder
         ]);
 
         $curadoriaC2 = Curadoria::create([
-            'coleta_id' => $coletaC2->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coletaC2->id,
             'bem_material_id' => $bemC2->id,
             'usuario_id' => $admin->id,
             'status' => 'aprovado',
@@ -395,7 +399,8 @@ class ColetaECuradoriaSeeder extends Seeder
         ]);
 
         $curadoriaC3 = Curadoria::create([
-            'coleta_id' => $coletaC3->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coletaC3->id,
             'bem_material_id' => $bemC3->id,
             'usuario_id' => $curador->id,
             'status' => 'aprovado',
@@ -445,7 +450,8 @@ class ColetaECuradoriaSeeder extends Seeder
         ]);
 
         $curadoriaD1 = Curadoria::create([
-            'coleta_id' => $coletaD1->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coletaD1->id,
             'bem_material_id' => $bemD1->id,
             'usuario_id' => $admin->id,
             'status' => 'aprovado',
@@ -492,7 +498,8 @@ class ColetaECuradoriaSeeder extends Seeder
         ]);
 
         $curadoriaD2 = Curadoria::create([
-            'coleta_id' => $coletaD2->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coletaD2->id,
             'bem_material_id' => $bemD2->id,
             'usuario_id' => $curador->id,
             'status' => 'aprovado',
@@ -539,7 +546,8 @@ class ColetaECuradoriaSeeder extends Seeder
         ]);
 
         $curadoriaD3 = Curadoria::create([
-            'coleta_id' => $coletaD3->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coletaD3->id,
             'bem_material_id' => $bemD3->id,
             'usuario_id' => $admin->id,
             'status' => 'aprovado',
@@ -643,7 +651,8 @@ class ColetaECuradoriaSeeder extends Seeder
             ]);
 
             $curadoriaE = Curadoria::create([
-                'coleta_id' => $coletaE->id,
+                'entidade_tipo' => 'coleta',
+                'entidade_id' => $coletaE->id,
                 'bem_material_id' => $bemAlvo->id,
                 'usuario_id' => $curador->id,
                 'status' => 'aprovado',
@@ -717,7 +726,8 @@ class ColetaECuradoriaSeeder extends Seeder
             ]);
 
             Curadoria::create([
-                'coleta_id' => $coleta->id,
+                'entidade_tipo' => 'coleta',
+                'entidade_id' => $coleta->id,
                 'bem_material_id' => null,
                 'usuario_id' => $admin->id,
                 'status' => 'rejeitado',

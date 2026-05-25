@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
  *
  *  1. UserSeeder              — Cria os 3 usuários fixos (admin, curador, coletor).
  *  2. BemMaterialSeeder       — Cria 6 sítios base do Piauí + mídias + responsáveis.
- *  3. ColetaECuradoriaSeeder  — Gera os cenários A–F de curadoria:
+ *  3. ColetaECuradoriaSeeder  — Gera os cenários A–F de curadoria (entidade_tipo=coleta):
  *       A: coletas pendentes (intenção: criarSitio quando avaliado)
  *       B: aprovação → criarSitio   + auditoria Inserção
  *       C: aprovação → atualizarSitio preenchendo campo que era NULL + auditoria Alteração
@@ -21,6 +21,11 @@ use Illuminate\Database\Seeder;
  *  4. AuditoriaManualSeeder              — Gera o cenário G: auditorias com meio = 'Manual'.
  *  5. CuradoriaAtualizacaoPendenteSeeder — 3 curadorias pendentes de atualizarSitio
  *       (bem_material_id preenchido; testa o fluxo de atualização de campos pelo curador).
+ *  6. ArtigoCientificoSeeder  — Gera cenários de artigos (entidade_tipo=submissao_artigo):
+ *       Artigo-A: 3 artigos aprovados + vínculos + auditorias (visíveis na aba Artigos)
+ *       Artigo-B: 2 submissões pendentes de artigo novo (fila de curadoria)
+ *       Artigo-C: 1 submissão pendente com artigo já existente (cenário A da API)
+ *       Artigo-D: 1 submissão rejeitada (histórico)
  *
  * Usuários de teste disponíveis após o seed:
  *  - admin@arqueologia.test   / password  (perfil: admin)
@@ -37,6 +42,7 @@ class DatabaseSeeder extends Seeder
             ColetaECuradoriaSeeder::class,
             AuditoriaManualSeeder::class,
             CuradoriaAtualizacaoPendenteSeeder::class,
+            ArtigoCientificoSeeder::class,
         ]);
     }
 }

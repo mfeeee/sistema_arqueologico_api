@@ -31,7 +31,8 @@ class AvaliacaoTest extends TestCase
     {
         $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id]);
         $curadoria = Curadoria::factory()->create([
-            'coleta_id' => $coleta->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta->id,
             'usuario_id' => $this->curador->id,
             'status' => StatusCuradoria::PENDENTE->value,
         ]);
@@ -64,7 +65,8 @@ class AvaliacaoTest extends TestCase
     {
         $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id]);
         $curadoria = Curadoria::factory()->create([
-            'coleta_id' => $coleta->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta->id,
             'usuario_id' => $this->curador->id,
             'status' => StatusCuradoria::PENDENTE->value,
         ]);
@@ -81,7 +83,8 @@ class AvaliacaoTest extends TestCase
     {
         $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id]);
         $curadoria = Curadoria::factory()->create([
-            'coleta_id' => $coleta->id,
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta->id,
             'usuario_id' => $this->curador->id,
             'status' => StatusCuradoria::PENDENTE->value,
         ]);
