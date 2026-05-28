@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
 use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Mobile\ArtigoCientificoController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/password-reset', [PasswordResetController::class, 'solicitar']);
+    Route::post('/password-reset/confirm', [PasswordResetController::class, 'confirmar']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
