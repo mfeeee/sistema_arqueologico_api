@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ClassificacaoUsuario;
 use App\Enums\PerfilUsuario;
+use App\Notifications\RecuperacaoSenhaNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -61,5 +62,10 @@ class User extends Authenticatable
     public function auditorias(): HasMany
     {
         return $this->hasMany(Auditoria::class, 'usuario_id');
+    }
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new RecuperacaoSenhaNotification($token));
     }
 }
