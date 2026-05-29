@@ -10,6 +10,7 @@ use App\Http\Controllers\Mobile\ArtigoCientificoController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
 use App\Http\Controllers\Mobile\FotoUploadController;
+use App\Http\Controllers\Mobile\NotificacaoController;
 use App\Http\Controllers\Mobile\SincronizacaoController;
 use App\Http\Controllers\Mobile\SubmissaoArtigoController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,10 @@ Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
 
     // Submissão de artigos por usuário autenticado
     Route::post('submissoes-artigos', [SubmissaoArtigoController::class, 'store']);
+
+    // Notificações
+    Route::get('notificacoes', [NotificacaoController::class, 'index']);
+    Route::patch('notificacoes/{notificacao}/lida', [NotificacaoController::class, 'marcarComoLida']);
 });
 
 // -- Admin/Site
