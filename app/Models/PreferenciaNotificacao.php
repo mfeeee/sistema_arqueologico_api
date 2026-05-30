@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\PreferenciaNotificacaoFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PreferenciaNotificacao extends Model
 {
-    /** @use HasFactory<\Database\Factories\PreferenciaNotificacaoFactory> */
+    /** @use HasFactory<PreferenciaNotificacaoFactory> */
     use HasFactory;
 
     protected $table = 'preferencias_notificacoes';

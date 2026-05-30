@@ -10,9 +10,9 @@ use App\Http\Controllers\Mobile\ArtigoCientificoController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
 use App\Http\Controllers\Mobile\FotoUploadController;
-use App\Http\Controllers\Mobile\NotificacaoController;
 use App\Http\Controllers\Mobile\SincronizacaoController;
 use App\Http\Controllers\Mobile\PreferenciaNotificacaoController;
+use App\Http\Controllers\Mobile\SincronizacaoController;
 use App\Http\Controllers\Mobile\SubmissaoArtigoController;
 use Illuminate\Support\Facades\Route;
 
