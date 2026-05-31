@@ -30,6 +30,6 @@ class BemMaterialPolicy
 
     public function delete(User $user): bool
     {
-        return $user->perfil === PerfilUsuario::ADMIN;
+        return in_array($user->perfil, [PerfilUsuario::CURADOR, PerfilUsuario::ADMIN]);
     }
 }

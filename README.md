@@ -390,13 +390,40 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `PATCH` | `/api/v1/admin/bens-materiais/{id}/publicar` | Altera o status de publicação de um bem material e registra auditoria |
-| `DELETE` | `/api/v1/admin/bens-materiais/{id}` | Remove um bem material (soft delete) |
+| `PATCH` | `/api/v1/admin/bens-materiais/{id}/curador-responsavel` | Define ou altera o curador responsável pelo sítio |
+| `DELETE` | `/api/v1/admin/bens-materiais/{id}` | Remove um bem material (soft delete) com registro de auditoria de exclusão |
 
 **Body — `PATCH /api/v1/admin/bens-materiais/{id}/publicar`**
 
 ```json
 {
   "publicado": true   // obrigatório (boolean)
+}
+```
+
+**Body — `PATCH /api/v1/admin/bens-materiais/{id}/curador-responsavel`**
+
+```json
+{
+  "curador_responsavel_id": "uuid-do-usuario"   // nullable — envie null para remover o responsável
+}
+```
+
+> Qualquer usuário com perfil `curador` ou `admin` pode alterar o responsável. A mudança gera uma entrada de auditoria com `operacao = Alteração`, `meio = Manual`, contendo o **nome** do curador anterior e do novo (não apenas UUIDs) em `valor_anterior` e `valor_novo`, para legibilidade imediata no histórico.
+
+#### Usuários
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/admin/usuarios/curadores` | Lista usuários com perfil `curador` ou `admin` ativos (para seleção de responsável) |
+
+**Resposta `200 OK`:**
+
+```json
+{
+  "data": [
+    { "id": "uuid", "name": "Nome", "email": "email@", "perfil": "curador" }
+  ]
 }
 ```
 
@@ -506,7 +533,7 @@ Todas as respostas seguem o envelope `data` / `meta`:
 | Perfil | Acesso Mobile (`v1/mobile`) | Acesso Admin (`v1/admin`) |
 |---|---|---|
 | `coletor` | ✅ Total | ❌ Bloqueado |
-| `curador` | ✅ Total | ✅ Curadorias e Auditorias |
+| `curador` | ✅ Total | ✅ Curadorias, Auditorias, publicar/excluir bem, alterar responsável |
 | `admin` | ✅ Total | ✅ Total |
 
 ***

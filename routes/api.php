@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\ArtigoBemMaterialController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
@@ -76,7 +77,11 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
 
     // Bens Materiais (admin)
     Route::patch('bens-materiais/{bemMaterial}/publicar', [AdminBemMaterialController::class, 'publicar']);
+    Route::patch('bens-materiais/{bemMaterial}/curador-responsavel', [AdminBemMaterialController::class, 'atualizarCuradorResponsavel']);
     Route::delete('bens-materiais/{bemMaterial}', [AdminBemMaterialController::class, 'destroy']);
+
+    // Usuários (admin)
+    Route::get('usuarios/curadores', [AdminUserController::class, 'curadores']);
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);
