@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Mail\CourierTransport;
 use App\Models\ArtigoBemMaterial;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
@@ -16,6 +17,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -43,6 +45,14 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->registerPolicies();
+        $this->registerMailTransports();
+    }
+
+    protected function registerMailTransports(): void
+    {
+        Mail::extend('courier', function (array $config = []) {
+            return new CourierTransport($config['api_key'] ?? '');
+        });
     }
 
     /**
