@@ -155,7 +155,7 @@ class CuradoriaController extends Controller
 
         if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
             $campos = $this->resolverCampos($request, $curadoria);
-            $bem = $this->criarBemMaterial($curadoria, (bool)$request->input('publicado', false), $campos);
+            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false), $campos);
             $bemMaterialId = $bem->id;
 
             Auditoria::create([
@@ -176,7 +176,7 @@ class CuradoriaController extends Controller
             $anterior = $this->snapshot($bem);
 
             $campos = $this->resolverCampos($request, $curadoria);
-            $campos['publicado'] = (bool)$request->input('publicado', false);
+            $campos['publicado'] = (bool) $request->input('publicado', false);
 
             if (! empty($campos)) {
                 BemMaterial::withoutEvents(fn () => $bem->update($campos));
@@ -433,8 +433,8 @@ class CuradoriaController extends Controller
             'cep' => $bem->cep,
             'endereco' => $bem->endereco,
             'meios_acesso' => $bem->meios_acesso,
-            'latitude' => (float)$bem->latitude,
-            'longitude' => (float)$bem->longitude,
+            'latitude' => (float) $bem->latitude,
+            'longitude' => (float) $bem->longitude,
             'artefatos' => $bem->artefatos,
             'publicado' => $bem->publicado,
             'ano_registro' => $bem->ano_registro,
@@ -448,8 +448,8 @@ class CuradoriaController extends Controller
      * incluindo campos extras presentes em dados_coletados.
      */
     /**
-     * @param array<string, mixed> $camposSelecionados Campos aceitos pelo curador.
-     *   Vazio = aceita todos os campos não-nulos da coleta.
+     * @param  array<string, mixed>  $camposSelecionados  Campos aceitos pelo curador.
+     *                                                    Vazio = aceita todos os campos não-nulos da coleta.
      */
     private function criarBemMaterial(Curadoria $curadoria, bool $publicado = false, array $camposSelecionados = []): BemMaterial
     {
