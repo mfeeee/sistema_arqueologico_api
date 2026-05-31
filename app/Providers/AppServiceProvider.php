@@ -13,9 +13,12 @@ use App\Policies\BemMaterialPolicy;
 use App\Policies\ColetaPolicy;
 use App\Policies\CuradoriaPolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -43,6 +46,22 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->registerPolicies();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Define os limitadores de taxa da API.
+     *
+     * - public-api: endpoints de leitura sem autenticação obrigatória.
+     *   Guests são limitados por IP; usuários autenticados têm limite maior por ID.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('public-api', function (Request $request): Limit {
+            return $request->user()
+                ? Limit::perMinute(120)->by($request->user()->id)
+                : Limit::perMinute(30)->by($request->ip());
+        });
     }
 
     /**
