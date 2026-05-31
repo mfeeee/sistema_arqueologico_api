@@ -205,17 +205,17 @@ class CuradoriaController extends Controller
             // REJEITAR: registra auditoria sem alterar o banco de bens
             $coleta = $curadoria->coleta;
             Auditoria::create([
-                'usuario_id'   => $request->user()->id,
+                'usuario_id' => $request->user()->id,
                 'entidade_tipo' => Curadoria::class,
-                'entidade_id'  => $curadoria->id,
+                'entidade_id' => $curadoria->id,
                 'curadoria_id' => $curadoria->id,
-                'operacao'     => 'Rejeição',
-                'meio'         => 'Curadoria',
-                'data_hora'    => now(),
+                'operacao' => 'Rejeição',
+                'meio' => 'Curadoria',
+                'data_hora' => now(),
                 'valor_anterior' => null,
-                'valor_novo'   => [
-                    'nome_bem'   => $coleta->nome_bem,
-                    'uf'         => $coleta->uf,
+                'valor_novo' => [
+                    'nome_bem' => $coleta->nome_bem,
+                    'uf' => $coleta->uf,
                     'observacao' => $request->observacao,
                 ],
             ]);
@@ -271,16 +271,16 @@ class CuradoriaController extends Controller
                     'data_hora' => now(),
                     'valor_anterior' => null,
                     'valor_novo' => [
-                        'artigo_id'            => $vinculo->artigo_id,
-                        'bem_material_id'      => $vinculo->bem_material_id,
-                        'tipo_mencao'          => $submissao->tipo_mencao,
-                        'trecho_relevante'     => $submissao->trecho_relevante,
-                        'artigo_titulo'        => $artigo?->titulo,
-                        'artigo_autores'       => $artigo?->autores,
-                        'artigo_doi'           => $artigo?->doi,
-                        'artigo_periodico'     => $artigo?->periodico,
-                        'artigo_ano_publicacao'=> $artigo?->ano_publicacao,
-                        'artigo_link_acesso'   => $artigo?->link_acesso,
+                        'artigo_id' => $vinculo->artigo_id,
+                        'bem_material_id' => $vinculo->bem_material_id,
+                        'tipo_mencao' => $submissao->tipo_mencao,
+                        'trecho_relevante' => $submissao->trecho_relevante,
+                        'artigo_titulo' => $artigo?->titulo,
+                        'artigo_autores' => $artigo?->autores,
+                        'artigo_doi' => $artigo?->doi,
+                        'artigo_periodico' => $artigo?->periodico,
+                        'artigo_ano_publicacao' => $artigo?->ano_publicacao,
+                        'artigo_link_acesso' => $artigo?->link_acesso,
                     ],
                 ]);
             } else {
@@ -315,16 +315,16 @@ class CuradoriaController extends Controller
                     'data_hora' => now(),
                     'valor_anterior' => null,
                     'valor_novo' => [
-                        'artigo_id'            => $artigo->id,
-                        'bem_material_id'      => $submissao->bem_material_id,
-                        'tipo_mencao'          => $submissao->tipo_mencao,
-                        'trecho_relevante'     => $submissao->trecho_relevante,
-                        'artigo_titulo'        => $artigo->titulo,
-                        'artigo_autores'       => $artigo->autores,
-                        'artigo_doi'           => $artigo->doi,
-                        'artigo_periodico'     => $artigo->periodico,
-                        'artigo_ano_publicacao'=> $artigo->ano_publicacao,
-                        'artigo_link_acesso'   => $artigo->link_acesso,
+                        'artigo_id' => $artigo->id,
+                        'bem_material_id' => $submissao->bem_material_id,
+                        'tipo_mencao' => $submissao->tipo_mencao,
+                        'trecho_relevante' => $submissao->trecho_relevante,
+                        'artigo_titulo' => $artigo->titulo,
+                        'artigo_autores' => $artigo->autores,
+                        'artigo_doi' => $artigo->doi,
+                        'artigo_periodico' => $artigo->periodico,
+                        'artigo_ano_publicacao' => $artigo->ano_publicacao,
+                        'artigo_link_acesso' => $artigo->link_acesso,
                     ],
                 ]);
 
@@ -338,17 +338,17 @@ class CuradoriaController extends Controller
             $submissao->update(['status' => 'rejeitado']);
 
             Auditoria::create([
-                'usuario_id'    => $request->user()->id,
+                'usuario_id' => $request->user()->id,
                 'entidade_tipo' => Curadoria::class,
-                'entidade_id'   => $curadoria->id,
-                'curadoria_id'  => $curadoria->id,
-                'operacao'      => 'Rejeição',
-                'meio'          => 'Curadoria',
-                'data_hora'     => now(),
+                'entidade_id' => $curadoria->id,
+                'curadoria_id' => $curadoria->id,
+                'operacao' => 'Rejeição',
+                'meio' => 'Curadoria',
+                'data_hora' => now(),
                 'valor_anterior' => null,
-                'valor_novo'    => [
-                    'titulo'     => $submissao->titulo,
-                    'doi'        => $submissao->doi,
+                'valor_novo' => [
+                    'titulo' => $submissao->titulo,
+                    'doi' => $submissao->doi,
                     'observacao' => $request->observacao,
                 ],
             ]);
@@ -458,26 +458,26 @@ class CuradoriaController extends Controller
 
         // Campos obrigatórios — sempre incluídos independente da seleção.
         $base = [
-            'coleta_id'    => $coleta->id,
-            'publicado'    => $publicado,
+            'coleta_id' => $coleta->id,
+            'publicado' => $publicado,
             'ano_registro' => Carbon::now()->year,
-            'latitude'     => $coleta->latitude,
-            'longitude'    => $coleta->longitude,
+            'latitude' => $coleta->latitude,
+            'longitude' => $coleta->longitude,
         ];
 
         // Campos opcionais derivados da coleta.
         $candidatos = [
-            'nome_bem'             => $coleta->nome_bem,
-            'natureza'             => $coleta->natureza_bem?->value,
-            'tipo'                 => $coleta->tipo_bem?->value,
-            'uf'                   => $coleta->uf,
-            'artefatos'            => $coleta->artefatos,
-            'nomes_populares'      => $dados['nomes_populares'] ?? null,
-            'meios_acesso'         => $dados['meios_acesso'] ?? null,
-            'municipio'            => $dados['municipio'] ?? null,
-            'cep'                  => $dados['cep'] ?? null,
-            'endereco'             => $dados['endereco'] ?? null,
-            'descricao_atualizacao'=> $dados['descricao_atualizacao'] ?? $dados['descricao'] ?? null,
+            'nome_bem' => $coleta->nome_bem,
+            'natureza' => $coleta->natureza_bem?->value,
+            'tipo' => $coleta->tipo_bem?->value,
+            'uf' => $coleta->uf,
+            'artefatos' => $coleta->artefatos,
+            'nomes_populares' => $dados['nomes_populares'] ?? null,
+            'meios_acesso' => $dados['meios_acesso'] ?? null,
+            'municipio' => $dados['municipio'] ?? null,
+            'cep' => $dados['cep'] ?? null,
+            'endereco' => $dados['endereco'] ?? null,
+            'descricao_atualizacao' => $dados['descricao_atualizacao'] ?? $dados['descricao'] ?? null,
         ];
 
         if (! empty($camposSelecionados)) {

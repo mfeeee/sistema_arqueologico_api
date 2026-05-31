@@ -35,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role'          => CheckRole::class,
+            'role' => CheckRole::class,
             'auth.optional' => OptionalAuthenticate::class,
         ]);
     })

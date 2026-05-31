@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Middleware\Authenticate;
 
 class OptionalAuthenticate extends Authenticate
@@ -13,7 +14,7 @@ class OptionalAuthenticate extends Authenticate
     protected function unauthenticated($request, array $guards): void
     {
         if ($request->bearerToken()) {
-            throw new \Illuminate\Auth\AuthenticationException(
+            throw new AuthenticationException(
                 'Token inválido ou expirado.',
                 $guards,
             );
