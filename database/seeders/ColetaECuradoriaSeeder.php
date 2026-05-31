@@ -324,7 +324,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'operacao' => 'Alteração',
             'meio' => 'Auditoria',
             'data_hora' => Carbon::now()->subDays(20),
-            'valor_anterior' => ['nomes_populares' => null],
+            'valor_anterior' => $snapC1,
             'valor_novo' => ['nomes_populares' => $novoNomePopular],
         ]);
 
@@ -372,7 +372,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'operacao' => 'Alteração',
             'meio' => 'Auditoria',
             'data_hora' => Carbon::now()->subDays(19),
-            'valor_anterior' => ['meios_acesso' => null],
+            'valor_anterior' => $snapC2,
             'valor_novo' => ['meios_acesso' => $novoMeiosAcesso],
         ]);
 
@@ -417,7 +417,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'operacao' => 'Alteração',
             'meio' => 'Auditoria',
             'data_hora' => Carbon::now()->subDays(18),
-            'valor_anterior' => ['municipio' => null, 'cep' => null],
+            'valor_anterior' => $snapC3,
             'valor_novo' => ['municipio' => 'São Raimundo Nonato', 'cep' => '64770-000'],
         ]);
 

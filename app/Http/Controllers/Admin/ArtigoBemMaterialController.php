@@ -19,11 +19,19 @@ class ArtigoBemMaterialController extends Controller
     {
         $this->authorize('delete', $artigoBemMaterial);
 
+        $artigo = $artigoBemMaterial->artigo;
+
         $anterior = [
             'artigo_id' => $artigoBemMaterial->artigo_id,
             'bem_material_id' => $artigoBemMaterial->bem_material_id,
             'tipo_mencao' => $artigoBemMaterial->tipo_mencao,
             'trecho_relevante' => $artigoBemMaterial->trecho_relevante,
+            'artigo_titulo' => $artigo?->titulo,
+            'artigo_autores' => $artigo?->autores,
+            'artigo_doi' => $artigo?->doi,
+            'artigo_periodico' => $artigo?->periodico,
+            'artigo_ano_publicacao' => $artigo?->ano_publicacao,
+            'artigo_link_acesso' => $artigo?->link_acesso,
         ];
 
         $artigoBemMaterial->delete();

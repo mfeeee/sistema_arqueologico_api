@@ -154,7 +154,8 @@ class CuradoriaController extends Controller
         $bemMaterialId = null;
 
         if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
-            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false));
+            $campos = $this->resolverCampos($request, $curadoria);
+            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false), $campos);
             $bemMaterialId = $bem->id;
 
             Auditoria::create([
@@ -200,8 +201,25 @@ class CuradoriaController extends Controller
                     'valor_novo' => array_intersect_key($this->snapshot($bem->fresh()), $campos),
                 ]);
             }
+        } else {
+            // REJEITAR: registra auditoria sem alterar o banco de bens
+            $coleta = $curadoria->coleta;
+            Auditoria::create([
+                'usuario_id' => $request->user()->id,
+                'entidade_tipo' => Curadoria::class,
+                'entidade_id' => $curadoria->id,
+                'curadoria_id' => $curadoria->id,
+                'operacao' => 'Rejeição',
+                'meio' => 'Curadoria',
+                'data_hora' => now(),
+                'valor_anterior' => null,
+                'valor_novo' => [
+                    'nome_bem' => $coleta->nome_bem,
+                    'uf' => $coleta->uf,
+                    'observacao' => $request->observacao,
+                ],
+            ]);
         }
-        // REJEITAR: $bemMaterialId permanece null
 
         $curadoria->update([
             'status' => $request->status,
@@ -241,6 +259,8 @@ class CuradoriaController extends Controller
                     'trecho_relevante' => $submissao->trecho_relevante,
                 ]);
 
+                $artigo = $vinculo->artigo;
+
                 Auditoria::create([
                     'usuario_id' => $request->user()->id,
                     'entidade_tipo' => ArtigoBemMaterial::class,
@@ -255,6 +275,12 @@ class CuradoriaController extends Controller
                         'bem_material_id' => $vinculo->bem_material_id,
                         'tipo_mencao' => $submissao->tipo_mencao,
                         'trecho_relevante' => $submissao->trecho_relevante,
+                        'artigo_titulo' => $artigo?->titulo,
+                        'artigo_autores' => $artigo?->autores,
+                        'artigo_doi' => $artigo?->doi,
+                        'artigo_periodico' => $artigo?->periodico,
+                        'artigo_ano_publicacao' => $artigo?->ano_publicacao,
+                        'artigo_link_acesso' => $artigo?->link_acesso,
                     ],
                 ]);
             } else {
@@ -289,13 +315,16 @@ class CuradoriaController extends Controller
                     'data_hora' => now(),
                     'valor_anterior' => null,
                     'valor_novo' => [
-                        'id' => $artigo->id,
-                        'titulo' => $artigo->titulo,
-                        'doi' => $artigo->doi,
-                        'autores' => $artigo->autores,
-                        'ano_publicacao' => $artigo->ano_publicacao,
+                        'artigo_id' => $artigo->id,
                         'bem_material_id' => $submissao->bem_material_id,
                         'tipo_mencao' => $submissao->tipo_mencao,
+                        'trecho_relevante' => $submissao->trecho_relevante,
+                        'artigo_titulo' => $artigo->titulo,
+                        'artigo_autores' => $artigo->autores,
+                        'artigo_doi' => $artigo->doi,
+                        'artigo_periodico' => $artigo->periodico,
+                        'artigo_ano_publicacao' => $artigo->ano_publicacao,
+                        'artigo_link_acesso' => $artigo->link_acesso,
                     ],
                 ]);
 
@@ -307,6 +336,22 @@ class CuradoriaController extends Controller
         } else {
             // REJEITAR
             $submissao->update(['status' => 'rejeitado']);
+
+            Auditoria::create([
+                'usuario_id' => $request->user()->id,
+                'entidade_tipo' => Curadoria::class,
+                'entidade_id' => $curadoria->id,
+                'curadoria_id' => $curadoria->id,
+                'operacao' => 'Rejeição',
+                'meio' => 'Curadoria',
+                'data_hora' => now(),
+                'valor_anterior' => null,
+                'valor_novo' => [
+                    'titulo' => $submissao->titulo,
+                    'doi' => $submissao->doi,
+                    'observacao' => $request->observacao,
+                ],
+            ]);
         }
 
         $curadoria->update([
@@ -402,19 +447,30 @@ class CuradoriaController extends Controller
      * Cria um novo BemMaterial a partir dos dados da coleta,
      * incluindo campos extras presentes em dados_coletados.
      */
-    private function criarBemMaterial(Curadoria $curadoria, bool $publicado = false): BemMaterial
+    /**
+     * @param  array<string, mixed>  $camposSelecionados  Campos aceitos pelo curador.
+     *                                                    Vazio = aceita todos os campos não-nulos da coleta.
+     */
+    private function criarBemMaterial(Curadoria $curadoria, bool $publicado = false, array $camposSelecionados = []): BemMaterial
     {
         $coleta = $curadoria->coleta;
         $dados = is_array($coleta->dados_coletados) ? $coleta->dados_coletados : [];
 
-        $bem = BemMaterial::withoutEvents(fn () => BemMaterial::create([
+        // Campos obrigatórios — sempre incluídos independente da seleção.
+        $base = [
             'coleta_id' => $coleta->id,
+            'publicado' => $publicado,
+            'ano_registro' => Carbon::now()->year,
+            'latitude' => $coleta->latitude,
+            'longitude' => $coleta->longitude,
+        ];
+
+        // Campos opcionais derivados da coleta.
+        $candidatos = [
             'nome_bem' => $coleta->nome_bem,
             'natureza' => $coleta->natureza_bem?->value,
             'tipo' => $coleta->tipo_bem?->value,
             'uf' => $coleta->uf,
-            'latitude' => $coleta->latitude,
-            'longitude' => $coleta->longitude,
             'artefatos' => $coleta->artefatos,
             'nomes_populares' => $dados['nomes_populares'] ?? null,
             'meios_acesso' => $dados['meios_acesso'] ?? null,
@@ -422,9 +478,26 @@ class CuradoriaController extends Controller
             'cep' => $dados['cep'] ?? null,
             'endereco' => $dados['endereco'] ?? null,
             'descricao_atualizacao' => $dados['descricao_atualizacao'] ?? $dados['descricao'] ?? null,
-            'publicado' => $publicado,
-            'ano_registro' => Carbon::now()->year,
-        ]));
+        ];
+
+        if (! empty($camposSelecionados)) {
+            // Aplica somente os campos aceitos pelo curador, usando os valores
+            // do payload (que já vieram filtrados por resolverCampos).
+            foreach ($candidatos as $chave => $_) {
+                if (array_key_exists($chave, $camposSelecionados) && $camposSelecionados[$chave] !== null) {
+                    $base[$chave] = $camposSelecionados[$chave];
+                }
+            }
+        } else {
+            // Sem seleção explícita → todos os campos não-nulos da coleta.
+            foreach ($candidatos as $chave => $valor) {
+                if ($valor !== null && $valor !== '') {
+                    $base[$chave] = $valor;
+                }
+            }
+        }
+
+        $bem = BemMaterial::withoutEvents(fn () => BemMaterial::create($base));
 
         DB::statement(
             'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',

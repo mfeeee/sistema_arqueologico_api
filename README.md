@@ -181,6 +181,9 @@ Authorization: Bearer {token}
 | Método | Endpoint | Autenticação | Descrição |
 |---|---|---|---|
 | `POST` | `/api/v1/auth/login` | — | Login e emissão de token Sanctum |
+| `POST` | `/api/v1/auth/register` | — | Cadastro de novo usuário |
+| `POST` | `/api/v1/auth/password-reset` | — | Solicita e-mail de recuperação de senha |
+| `POST` | `/api/v1/auth/password-reset/confirm` | — | Confirma o reset com o token recebido por e-mail |
 | `POST` | `/api/v1/auth/logout` | `auth:sanctum` | Revoga o token atual |
 | `GET` | `/api/v1/auth/me` | `auth:sanctum` | Retorna dados do usuário autenticado |
 
@@ -195,9 +198,16 @@ Authorization: Bearer {token}
 
 ***
 
-### Mobile — `v1/mobile` · `[auth:sanctum]`
+### Mobile — `v1/mobile`
 
-#### Coletas
+Os endpoints mobile se dividem em dois grupos de autenticação:
+
+| Grupo | Middleware | Comportamento |
+|---|---|---|
+| **Leitura pública** | `auth.optional:sanctum` | Sem token → acesso como guest. Com token válido → autenticado. Token inválido/expirado → `401`. Sujeito a rate limiting (`30 req/min` para guests, `120 req/min` para autenticados). |
+| **Protegido** | `auth:sanctum` | Token obrigatório. Sem token → `401`. |
+
+#### Coletas · `[auth:sanctum]`
 
 | Método | Endpoint | Descrição |
 |---|---|---|
@@ -224,7 +234,7 @@ Authorization: Bearer {token}
 }
 ```
 
-#### Bens Materiais
+#### Bens Materiais · `[auth.optional:sanctum]` · público
 
 | Método | Endpoint | Descrição |
 |---|---|---|
@@ -249,13 +259,18 @@ Authorization: Bearer {token}
 | `tipo` | `string` | ❌ | Filtra por tipo de bem |
 | `publicado` | `string` | ❌ | Filtro de publicação: `true`, `false` ou `all` (padrão: `true`) |
 
-#### Artigos Científicos
+#### Artigos Científicos e Colaboradores · `[auth.optional:sanctum]` · público
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/mobile/bens-materiais/{id}/artigos` | Lista artigos vinculados a um bem material |
+| `GET` | `/api/v1/mobile/bens-materiais/{id}/colaboradores` | Lista colaboradores do bem material (coletores + autores de artigos aprovados) |
+
+#### Artigos Científicos — Sugestão · `[auth:sanctum]`
 
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `GET` | `/api/v1/mobile/artigos-cientificos/buscar-doi` | Busca um artigo já cadastrado pelo DOI |
-| `GET` | `/api/v1/mobile/bens-materiais/{id}/artigos` | Lista artigos vinculados a um bem material |
-| `GET` | `/api/v1/mobile/bens-materiais/{id}/colaboradores` | Lista colaboradores do bem material (coletores + autores de artigos aprovados) |
 | `POST` | `/api/v1/mobile/submissoes-artigos` | Submete um artigo para curadoria, vinculando-o a um bem material |
 
 **Resposta `200 OK` — `GET /api/v1/mobile/bens-materiais/{id}/colaboradores`:**
@@ -336,7 +351,7 @@ Authorization: Bearer {token}
 > **Valores válidos para `tipo_mencao` (`TipoMencaoArtigo`):**
 > `estudo_principal` · `referencia_geografica` · `citacao_comparativa` · `dado_secundario` · `mencao_simples`
 
-#### Sincronização
+#### Sincronização · `[auth:sanctum]`
 
 | Método | Endpoint | Descrição |
 |---|---|---|
@@ -375,13 +390,40 @@ Authorization: Bearer {token}
 | Método | Endpoint | Descrição |
 |---|---|---|
 | `PATCH` | `/api/v1/admin/bens-materiais/{id}/publicar` | Altera o status de publicação de um bem material e registra auditoria |
-| `DELETE` | `/api/v1/admin/bens-materiais/{id}` | Remove um bem material (soft delete) |
+| `PATCH` | `/api/v1/admin/bens-materiais/{id}/curador-responsavel` | Define ou altera o curador responsável pelo sítio |
+| `DELETE` | `/api/v1/admin/bens-materiais/{id}` | Remove um bem material (soft delete) com registro de auditoria de exclusão |
 
 **Body — `PATCH /api/v1/admin/bens-materiais/{id}/publicar`**
 
 ```json
 {
   "publicado": true   // obrigatório (boolean)
+}
+```
+
+**Body — `PATCH /api/v1/admin/bens-materiais/{id}/curador-responsavel`**
+
+```json
+{
+  "curador_responsavel_id": "uuid-do-usuario"   // nullable — envie null para remover o responsável
+}
+```
+
+> Qualquer usuário com perfil `curador` ou `admin` pode alterar o responsável. A mudança gera uma entrada de auditoria com `operacao = Alteração`, `meio = Manual`, contendo o **nome** do curador anterior e do novo (não apenas UUIDs) em `valor_anterior` e `valor_novo`, para legibilidade imediata no histórico.
+
+#### Usuários
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/api/v1/admin/usuarios/curadores` | Lista usuários com perfil `curador` ou `admin` ativos (para seleção de responsável) |
+
+**Resposta `200 OK`:**
+
+```json
+{
+  "data": [
+    { "id": "uuid", "name": "Nome", "email": "email@", "perfil": "curador" }
+  ]
 }
 ```
 
@@ -491,7 +533,7 @@ Todas as respostas seguem o envelope `data` / `meta`:
 | Perfil | Acesso Mobile (`v1/mobile`) | Acesso Admin (`v1/admin`) |
 |---|---|---|
 | `coletor` | ✅ Total | ❌ Bloqueado |
-| `curador` | ✅ Total | ✅ Curadorias e Auditorias |
+| `curador` | ✅ Total | ✅ Curadorias, Auditorias, publicar/excluir bem, alterar responsável |
 | `admin` | ✅ Total | ✅ Total |
 
 ***
@@ -529,6 +571,8 @@ API_BASE_URL=http://<seu-ip-ou-dominio>:8000/api
 - **Laravel Sanctum**: emissão de tokens de acesso pessoal para a autenticação da API mobile.
 - **Laravel Fortify**: autenticação do painel administrativo web com suporte a **autenticação de dois fatores (2FA)** via TOTP.
 - Middleware `CheckRole` verifica o campo `perfil` do usuário antes de acessar rotas admin.
+- Middleware `OptionalAuthenticate` (`auth.optional:sanctum`): permite acesso público aos endpoints de leitura. Se um token for enviado e for **válido**, a requisição é autenticada normalmente. Se o token for **inválido ou expirado**, retorna `401` — apenas a **ausência** de token resulta em acesso como guest.
+- **Rate limiting** nos endpoints públicos via limiter `public-api`: `30 req/min` por IP para guests e `120 req/min` por ID de usuário para autenticados. Limite excedido retorna `429 Too Many Requests` com header `Retry-After`.
 - Todas as rotas protegidas retornam `401 Unauthorized` sem token e `403 Forbidden` sem perfil adequado.
 - O módulo de auditoria registra automaticamente ações sensíveis para rastreabilidade.
 
@@ -571,7 +615,7 @@ Funcionalidades identificadas como necessárias mas ainda não implementadas, or
 | 5 | **Evento/webhook na aprovação de curadoria** | Ao aprovar uma curadoria, o `web_coletum` invalida o cache manualmente via `invalidate_bens_cache()`. Um evento (`CuradoriaAprovada`) que dispara um webhook ou SSE eliminaria o acoplamento e funcionaria para qualquer cliente. |
 | 6 | **Versionamento de BemMaterial** | Guardar um snapshot completo a cada aprovação de curadoria permitiria consultar o estado exato do sítio em qualquer ponto do tempo, não apenas o anterior imediato. |
 | 7 | **Busca full-text em bens materiais** | `GET /mobile/bens-materiais?q=pedra+furada` usando `tsvector`/`tsquery` do PostgreSQL para buscas textuais eficientes em `nome_bem`, `nomes_populares` e `descricao_atualizacao`. |
-| 8 | **Rate limiting granular nas rotas admin** | As rotas `admin` não têm throttle configurado. Adicionar limites por perfil (ex.: 120 req/min para curador, 300 para admin) previne uso indevido e sobrecarga acidental. |
+| 8 | **Rate limiting nas rotas admin** | As rotas `admin` não têm throttle configurado. As rotas públicas já possuem o limiter `public-api` (30/120 req/min). Adicionar limites equivalentes por perfil nas rotas admin previne uso indevido e sobrecarga acidental. |
 
 ---
 
