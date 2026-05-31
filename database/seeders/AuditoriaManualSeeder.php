@@ -21,6 +21,31 @@ use Illuminate\Support\Carbon;
  */
 class AuditoriaManualSeeder extends Seeder
 {
+    /** @return array<string, mixed> */
+    private function snapshot(BemMaterial $bem): array
+    {
+        return [
+            'id' => $bem->id,
+            'codigo_iphan' => $bem->codigo_iphan,
+            'nome_bem' => $bem->nome_bem,
+            'nomes_populares' => $bem->nomes_populares,
+            'natureza' => $bem->natureza?->value ?? $bem->natureza,
+            'tipo' => $bem->tipo?->value ?? $bem->tipo,
+            'uf' => $bem->uf,
+            'municipio' => $bem->municipio,
+            'cep' => $bem->cep,
+            'endereco' => $bem->endereco,
+            'meios_acesso' => $bem->meios_acesso,
+            'latitude' => (float) $bem->latitude,
+            'longitude' => (float) $bem->longitude,
+            'artefatos' => $bem->artefatos,
+            'publicado' => $bem->publicado,
+            'ano_registro' => $bem->ano_registro,
+            'descricao_atualizacao' => $bem->descricao_atualizacao,
+            'updated_at' => $bem->updated_at?->toIso8601String(),
+        ];
+    }
+
     public function run(): void
     {
         $admin = User::where('email', 'admin@arqueologia.test')->firstOrFail();
@@ -41,9 +66,7 @@ class AuditoriaManualSeeder extends Seeder
             'operacao' => 'Alteração',
             'meio' => 'Manual',
             'data_hora' => Carbon::now()->subDays(7),
-            'valor_anterior' => [
-                'meios_acesso' => $bemF1->meios_acesso,
-            ],
+            'valor_anterior' => $this->snapshot($bemF1),
             'valor_novo' => [
                 'meios_acesso' => 'Acesso pela BR-020 até São Raimundo Nonato; nova trilha sinalizada desde jan/2026 — 6 km ao sítio. Entrada somente com guia cadastrado no PARNA.',
             ],
@@ -59,10 +82,7 @@ class AuditoriaManualSeeder extends Seeder
             'operacao' => 'Alteração',
             'meio' => 'Manual',
             'data_hora' => Carbon::now()->subDays(5),
-            'valor_anterior' => [
-                'publicado' => $bemF2->publicado,
-                'descricao_atualizacao' => $bemF2->descricao_atualizacao,
-            ],
+            'valor_anterior' => $this->snapshot($bemF2),
             'valor_novo' => [
                 'publicado' => true,
                 'descricao_atualizacao' => 'Sítio validado pelo IPHAN em 2026. Publicação autorizada após revisão técnica completa.',
