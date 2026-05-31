@@ -11,15 +11,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BemMaterial extends Model
 {
-    use HasAuditoria, HasFactory, HasUuids;
+    use HasAuditoria, HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'bens_materiais';
 
     protected $fillable = [
         'coleta_id',
+        'curador_responsavel_id',
         'codigo_iphan',
         'nome_bem',
         'nomes_populares',
@@ -50,7 +52,6 @@ class BemMaterial extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'ano_registro' => 'integer',
-        'deletado_em' => 'datetime',
     ];
 
     public function coleta(): BelongsTo
@@ -66,6 +67,11 @@ class BemMaterial extends Model
     public function responsavel(): BelongsTo
     {
         return $this->belongsTo(User::class, 'responsavel_id');
+    }
+
+    public function curadorResponsavel(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'curador_responsavel_id');
     }
 
     public function responsaveis(): HasMany

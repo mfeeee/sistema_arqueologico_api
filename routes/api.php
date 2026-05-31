@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\ArtigoBemMaterialController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
@@ -31,34 +32,39 @@ Route::prefix('auth')->group(function () {
 });
 
 // -- Mobile
-Route::prefix('v1/mobile')->middleware('auth:sanctum')->group(function () {
-    // Coletas
-    Route::apiResource('coletas', ColetaController::class);
+Route::prefix('v1/mobile')->group(function () {
+    // Leitura pública — token opcional, validado se enviado; 30 req/min (guest) ou 120 (autenticado)
+    Route::middleware(['auth.optional:sanctum', 'throttle:public-api'])->group(function () {
+        Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
+        Route::get('bens-materiais', [BemMaterialController::class, 'index']);
+        Route::get('bens-materiais/{bemMaterial}', [BemMaterialController::class, 'show']);
+        Route::get('bens-materiais/{bemMaterial}/artigos', [ArtigoCientificoController::class, 'porBemMaterial']);
+        Route::get('bens-materiais/{bemMaterial}/colaboradores', [CuradoriaController::class, 'colaboradores']);
+    });
 
-    // Sincronização batch (mobile offline)
-    Route::post('sync', [SincronizacaoController::class, 'sincronizar']);
+    // Autenticação obrigatória
+    Route::middleware('auth:sanctum')->group(function () {
+        // Coletas
+        Route::apiResource('coletas', ColetaController::class);
 
-    // Bens Materiais
-    Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
-    Route::apiResource('bens-materiais', BemMaterialController::class)->only(['index', 'show']);
+        // Sincronização batch (mobile offline)
+        Route::post('sync', [SincronizacaoController::class, 'sincronizar']);
 
-    // Fotos
-    Route::post('fotos', [FotoUploadController::class, 'store']);
+        // Fotos
+        Route::post('fotos', [FotoUploadController::class, 'store']);
 
-    // Artigos científicos — busca por DOI, listagem por bem material e colaboradores
-    Route::get('artigos-cientificos/buscar-doi', [ArtigoCientificoController::class, 'buscarPorDoi']);
-    Route::get('bens-materiais/{bemMaterial}/artigos', [ArtigoCientificoController::class, 'porBemMaterial']);
-    Route::get('bens-materiais/{bemMaterial}/colaboradores', [CuradoriaController::class, 'colaboradores']);
+        // Sugerir estudo — passa por curadoria antes de ser publicado
+        Route::get('artigos-cientificos/buscar-doi', [ArtigoCientificoController::class, 'buscarPorDoi']);
+        Route::post('submissoes-artigos', [SubmissaoArtigoController::class, 'store']);
 
-    // Submissão de artigos por usuário autenticado
-    Route::post('submissoes-artigos', [SubmissaoArtigoController::class, 'store']);
+        // Preferências de notificações
+        Route::get('preferencias-notificacoes', [PreferenciaNotificacaoController::class, 'show']);
+        Route::put('preferencias-notificacoes', [PreferenciaNotificacaoController::class, 'update']);
 
-    // Preferências de notificações
-    Route::get('preferencias-notificacoes', [PreferenciaNotificacaoController::class, 'show']);
-    Route::put('preferencias-notificacoes', [PreferenciaNotificacaoController::class, 'update']);
-    // Notificações
-    Route::get('notificacoes', [NotificacaoController::class, 'index']);
-    Route::patch('notificacoes/{notificacao}/lida', [NotificacaoController::class, 'marcarComoLida']);
+        // Notificações
+        Route::get('notificacoes', [NotificacaoController::class, 'index']);
+        Route::patch('notificacoes/{notificacao}/lida', [NotificacaoController::class, 'marcarComoLida']);
+    });
 });
 
 // -- Admin/Site
@@ -71,7 +77,11 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
 
     // Bens Materiais (admin)
     Route::patch('bens-materiais/{bemMaterial}/publicar', [AdminBemMaterialController::class, 'publicar']);
+    Route::patch('bens-materiais/{bemMaterial}/curador-responsavel', [AdminBemMaterialController::class, 'atualizarCuradorResponsavel']);
     Route::delete('bens-materiais/{bemMaterial}', [AdminBemMaterialController::class, 'destroy']);
+
+    // Usuários (admin)
+    Route::get('usuarios/curadores', [AdminUserController::class, 'curadores']);
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);

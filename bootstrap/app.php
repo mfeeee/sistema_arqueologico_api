@@ -2,9 +2,10 @@
 
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\OptionalAuthenticate;
 use App\Http\Middleware\SetLocale;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -46,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => CheckRole::class,
+            'auth.optional' => OptionalAuthenticate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -71,7 +73,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => __('errors.validation_error'),
-                    'errors'  => $e->errors(),
+                    'errors' => $e->errors(),
                 ], 422);
             }
         });
@@ -79,10 +81,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (HttpException $e, Request $request) {
             if ($request->expectsJson()) {
                 $message = match ($e->getStatusCode()) {
-                    401     => __('errors.unauthorized'),
-                    403     => __('errors.forbidden'),
-                    404     => __('errors.not_found'),
-                    500     => __('errors.internal_error'),
+                    401 => __('errors.unauthorized'),
+                    403 => __('errors.forbidden'),
+                    404 => __('errors.not_found'),
+                    500 => __('errors.internal_error'),
                     default => $e->getMessage() ?: __('errors.internal_error'),
                 };
 

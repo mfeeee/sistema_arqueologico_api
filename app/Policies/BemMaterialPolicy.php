@@ -15,8 +15,7 @@ class BemMaterialPolicy
 
     public function view(?User $user, BemMaterial $bem): bool
     {
-        return $bem->publicado
-            || ($user && in_array($user->perfil, [PerfilUsuario::COLETOR, PerfilUsuario::CURADOR, PerfilUsuario::ADMIN]));
+        return true;
     }
 
     public function create(User $user): bool
@@ -31,6 +30,6 @@ class BemMaterialPolicy
 
     public function delete(User $user): bool
     {
-        return $user->perfil === PerfilUsuario::ADMIN;
+        return in_array($user->perfil, [PerfilUsuario::CURADOR, PerfilUsuario::ADMIN]);
     }
 }
