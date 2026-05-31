@@ -155,7 +155,7 @@ class CuradoriaController extends Controller
 
         if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
             $campos = $this->resolverCampos($request, $curadoria);
-            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false), $campos);
+            $bem = $this->criarBemMaterial($curadoria, (bool)$request->input('publicado', false), $campos);
             $bemMaterialId = $bem->id;
 
             Auditoria::create([
@@ -176,9 +176,9 @@ class CuradoriaController extends Controller
             $anterior = $this->snapshot($bem);
 
             $campos = $this->resolverCampos($request, $curadoria);
-            $campos['publicado'] = (bool) $request->input('publicado', false);
+            $campos['publicado'] = (bool)$request->input('publicado', false);
 
-            if (!empty($campos)) {
+            if (! empty($campos)) {
                 BemMaterial::withoutEvents(fn () => $bem->update($campos));
 
                 if (array_key_exists('latitude', $campos) || array_key_exists('longitude', $campos)) {
@@ -433,8 +433,8 @@ class CuradoriaController extends Controller
             'cep' => $bem->cep,
             'endereco' => $bem->endereco,
             'meios_acesso' => $bem->meios_acesso,
-            'latitude' => (float) $bem->latitude,
-            'longitude' => (float) $bem->longitude,
+            'latitude' => (float)$bem->latitude,
+            'longitude' => (float)$bem->longitude,
             'artefatos' => $bem->artefatos,
             'publicado' => $bem->publicado,
             'ano_registro' => $bem->ano_registro,
@@ -480,7 +480,7 @@ class CuradoriaController extends Controller
             'descricao_atualizacao' => $dados['descricao_atualizacao'] ?? $dados['descricao'] ?? null,
         ];
 
-        if (!empty($camposSelecionados)) {
+        if (! empty($camposSelecionados)) {
             // Aplica somente os campos aceitos pelo curador, usando os valores
             // do payload (que já vieram filtrados por resolverCampos).
             foreach ($candidatos as $chave => $_) {
