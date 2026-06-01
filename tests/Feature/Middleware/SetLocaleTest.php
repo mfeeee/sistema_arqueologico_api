@@ -19,7 +19,7 @@ class SetLocaleTest extends TestCase
         return $this->withHeaders(['Accept-Language' => '']);
     }
 
-    public function test_defaults_to_pt_BR_when_no_header(): void
+    public function test_defaults_to_pt_b_r_when_no_header(): void
     {
         $response = $this->withNoLanguageHeader()
             ->getJson('/api/v1/mobile/coletas');
@@ -28,7 +28,7 @@ class SetLocaleTest extends TestCase
         $response->assertJson(['message' => 'Não autorizado. Faça login novamente.']);
     }
 
-    public function test_uses_pt_BR_when_header_is_pt_BR(): void
+    public function test_uses_pt_b_r_when_header_is_pt_br(): void
     {
         $response = $this->withHeader('Accept-Language', 'pt-BR')
             ->getJson('/api/v1/mobile/coletas');
@@ -37,7 +37,7 @@ class SetLocaleTest extends TestCase
         $response->assertJson(['message' => 'Não autorizado. Faça login novamente.']);
     }
 
-    public function test_uses_en_locale_when_header_is_en_US(): void
+    public function test_uses_en_locale_when_header_is_en_us(): void
     {
         $response = $this->withHeader('Accept-Language', 'en-US')
             ->getJson('/api/v1/mobile/coletas');
@@ -55,7 +55,7 @@ class SetLocaleTest extends TestCase
         $response->assertJson(['message' => 'Unauthorized. Please sign in again.']);
     }
 
-    public function test_uses_pt_BR_when_header_is_pt(): void
+    public function test_uses_pt_b_r_when_header_is_pt(): void
     {
         $response = $this->withHeader('Accept-Language', 'pt')
             ->getJson('/api/v1/mobile/coletas');
@@ -64,7 +64,7 @@ class SetLocaleTest extends TestCase
         $response->assertJson(['message' => 'Não autorizado. Faça login novamente.']);
     }
 
-    public function test_defaults_to_pt_BR_for_unknown_locale(): void
+    public function test_defaults_to_pt_b_r_for_unknown_locale(): void
     {
         $response = $this->withHeader('Accept-Language', 'fr-FR')
             ->getJson('/api/v1/mobile/coletas');
@@ -82,11 +82,11 @@ class SetLocaleTest extends TestCase
         $response->assertJson(['message' => 'Unauthorized. Please sign in again.']);
     }
 
-    public function test_login_returns_pt_BR_invalid_credentials(): void
+    public function test_login_returns_pt_b_r_invalid_credentials(): void
     {
         $response = $this->withHeader('Accept-Language', 'pt-BR')
             ->postJson('/api/auth/login', [
-                'email'    => 'inexistente@teste.com',
+                'email' => 'inexistente@teste.com',
                 'password' => 'senhaerrada',
             ]);
 
@@ -98,7 +98,7 @@ class SetLocaleTest extends TestCase
     {
         $response = $this->withHeader('Accept-Language', 'en-US')
             ->postJson('/api/auth/login', [
-                'email'    => 'inexistente@teste.com',
+                'email' => 'inexistente@teste.com',
                 'password' => 'senhaerrada',
             ]);
 
@@ -106,7 +106,7 @@ class SetLocaleTest extends TestCase
         $response->assertJson(['message' => 'Invalid credentials.']);
     }
 
-    public function test_forbidden_returns_pt_BR_message(): void
+    public function test_forbidden_returns_pt_b_r_message(): void
     {
         $response = $this->withHeader('Accept-Language', 'pt-BR')
             ->getJson('/api/v1/admin/curadorias');

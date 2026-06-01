@@ -55,21 +55,6 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Define os limitadores de taxa da API.
-     *
-     * - public-api: endpoints de leitura sem autenticação obrigatória.
-     *   Guests são limitados por IP; usuários autenticados têm limite maior por ID.
-     */
-    protected function configureRateLimiting(): void
-    {
-        RateLimiter::for('public-api', function (Request $request): Limit {
-            return $request->user()
-                ? Limit::perMinute(120)->by($request->user()->id)
-                : Limit::perMinute(30)->by($request->ip());
-        });
-    }
-
     protected function configurePasswordReset(): void
     {
         ResetPassword::createUrlUsing(function (mixed $user, string $token): string {
