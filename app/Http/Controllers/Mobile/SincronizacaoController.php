@@ -17,7 +17,7 @@ class SincronizacaoController extends Controller
         dispatch(new ProcessarSincronizacao($usuarioId, $coletas));
 
         return response()->json([
-            'message' => 'Sincronização recebida e enfileirada.',
+            'message'     => __('success.synced'),
             'total_itens' => count($coletas),
         ], 202);
     }
