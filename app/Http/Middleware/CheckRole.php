@@ -18,7 +18,7 @@ class CheckRole
         $user = $request->user();
 
         if ($user === null || ! in_array($user->perfil?->value, $roles, strict: true)) {
-            return response()->json(['message' => 'Acesso negado.'], 403);
+            return response()->json(['message' => __('errors.forbidden')], 403);
         }
 
         return $next($request);
