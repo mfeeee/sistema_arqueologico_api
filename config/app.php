@@ -54,7 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
-    'flutter_reset_url' => env('FLUTTER_RESET_URL', 'arqueologico://reset-password'),
+    'flutter_reset_url'   => env('FLUTTER_RESET_URL', 'arqueologico://reset-password'),
+    'password_reset_url'  => env('PASSWORD_RESET_URL', 'arqueopi://reset-password'),
 
     /*
     |--------------------------------------------------------------------------
