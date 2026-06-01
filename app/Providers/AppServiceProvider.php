@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Mail\CourierTransport;
 use App\Models\ArtigoBemMaterial;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
@@ -14,10 +13,10 @@ use App\Policies\BemMaterialPolicy;
 use App\Policies\ColetaPolicy;
 use App\Policies\CuradoriaPolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,34 +29,22 @@ class AppServiceProvider extends ServiceProvider
         ArtigoBemMaterial::class => ArtigoBemMaterialPolicy::class,
     ];
 
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configurePasswordReset();
         $this->registerPolicies();
-        $this->registerMailTransports();
     }
 
-    protected function registerMailTransports(): void
+    protected function configurePasswordReset(): void
     {
-        Mail::extend('courier', function (array $config = []) {
-            return new CourierTransport($config['api_key'] ?? '');
+        ResetPassword::createUrlUsing(function (mixed $user, string $token): string {
+            $base = rtrim((string) config('app.password_reset_url', 'arqueopi://reset-password'), '/');
+
+            return $base.'?token='.$token.'&email='.urlencode((string) $user->email);
         });
     }
 
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
