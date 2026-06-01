@@ -35,8 +35,4 @@ return [
         ],
     ],
 
-    'courier' => [
-        'api_key' => env('COURIER_API_KEY'),
-    ],
-
 ];
