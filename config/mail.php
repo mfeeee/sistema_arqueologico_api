@@ -97,9 +97,8 @@ return [
             'retry_after' => 60,
         ],
 
-        'courier' => [
-            'transport' => 'courier',
-            'api_key' => env('COURIER_API_KEY'),
+        'brevo' => [
+            'transport' => 'brevo',
         ],
 
     ],
