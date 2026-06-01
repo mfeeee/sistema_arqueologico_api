@@ -21,7 +21,8 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create(['ativo' => true]);
 
-        $this->postJson('/api/auth/password-reset', ['email' => $user->email])
+        $this->withHeader('Accept-Language', 'pt-BR')
+            ->postJson('/api/auth/password-reset', ['email' => $user->email])
             ->assertStatus(200)
             ->assertJson(['message' => 'Se este e-mail estiver cadastrado, você receberá as instruções em breve.']);
 
@@ -32,7 +33,8 @@ class PasswordResetTest extends TestCase
     {
         Notification::fake();
 
-        $this->postJson('/api/auth/password-reset', ['email' => 'naoexiste@teste.com'])
+        $this->withHeader('Accept-Language', 'pt-BR')
+            ->postJson('/api/auth/password-reset', ['email' => 'naoexiste@teste.com'])
             ->assertStatus(200)
             ->assertJson(['message' => 'Se este e-mail estiver cadastrado, você receberá as instruções em breve.']);
 
@@ -51,12 +53,13 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create(['ativo' => true]);
         $token = Password::createToken($user);
 
-        $this->postJson('/api/auth/password-reset/confirm', [
-            'email' => $user->email,
-            'token' => $token,
-            'password' => 'novaSenha123',
-            'password_confirmation' => 'novaSenha123',
-        ])->assertStatus(200)
+        $this->withHeader('Accept-Language', 'pt-BR')
+            ->postJson('/api/auth/password-reset/confirm', [
+                'email' => $user->email,
+                'token' => $token,
+                'password' => 'novaSenha123',
+                'password_confirmation' => 'novaSenha123',
+            ])->assertStatus(200)
             ->assertJson(['message' => 'Senha redefinida com sucesso.']);
 
         $user->refresh();
@@ -85,12 +88,13 @@ class PasswordResetTest extends TestCase
     {
         $user = User::factory()->create(['ativo' => true]);
 
-        $this->postJson('/api/auth/password-reset/confirm', [
-            'email' => $user->email,
-            'token' => 'token-invalido',
-            'password' => 'novaSenha123',
-            'password_confirmation' => 'novaSenha123',
-        ])->assertStatus(422)
+        $this->withHeader('Accept-Language', 'pt-BR')
+            ->postJson('/api/auth/password-reset/confirm', [
+                'email' => $user->email,
+                'token' => 'token-invalido',
+                'password' => 'novaSenha123',
+                'password_confirmation' => 'novaSenha123',
+            ])->assertStatus(422)
             ->assertJson(['message' => 'Token inválido ou expirado.']);
     }
 
@@ -104,12 +108,13 @@ class PasswordResetTest extends TestCase
             ->where('email', $user->email)
             ->update(['created_at' => now()->subHours(2)]);
 
-        $this->postJson('/api/auth/password-reset/confirm', [
-            'email' => $user->email,
-            'token' => $token,
-            'password' => 'novaSenha123',
-            'password_confirmation' => 'novaSenha123',
-        ])->assertStatus(422)
+        $this->withHeader('Accept-Language', 'pt-BR')
+            ->postJson('/api/auth/password-reset/confirm', [
+                'email' => $user->email,
+                'token' => $token,
+                'password' => 'novaSenha123',
+                'password_confirmation' => 'novaSenha123',
+            ])->assertStatus(422)
             ->assertJson(['message' => 'Token inválido ou expirado.']);
     }
 
