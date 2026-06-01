@@ -35,7 +35,7 @@ class PasswordResetController extends Controller
 
         $mensagem = match ($status) {
             Password::INVALID_TOKEN => __('errors.invalid_token'),
-            default                 => __('errors.password_reset_failed'),
+            default => __('errors.password_reset_failed'),
         };
 
         return response()->json(['message' => $mensagem], 422);

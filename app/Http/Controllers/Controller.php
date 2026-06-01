@@ -25,6 +25,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
  *     in="header",
  *     required=false,
  *     description="Idioma das mensagens de resposta",
+ *
  *     @OA\Schema(type="string", enum={"pt-BR", "en-US"}, example="pt-BR")
  * )
  */

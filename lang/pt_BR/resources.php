@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'coleta'       => 'Coleta',
+    'coleta' => 'Coleta',
     'bem_material' => 'Bem Material',
-    'usuario'      => 'Usuário',
-    'notificacao'  => 'Notificação',
+    'usuario' => 'Usuário',
+    'notificacao' => 'Notificação',
 ];
