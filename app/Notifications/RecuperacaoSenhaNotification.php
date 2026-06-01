@@ -34,7 +34,7 @@ class RecuperacaoSenhaNotification extends Notification
 
     private function buildResetUrl(string $email): string
     {
-        $base = config('app.flutter_reset_url', 'arqueologico://reset-password');
+        $base = config('app.password_reset_url', 'arqueopi://reset-password');
 
         return $base.'?'.http_build_query([
             'token' => $this->token,
