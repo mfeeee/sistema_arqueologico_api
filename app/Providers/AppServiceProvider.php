@@ -13,6 +13,7 @@ use App\Policies\BemMaterialPolicy;
 use App\Policies\ColetaPolicy;
 use App\Policies\CuradoriaPolicy;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
@@ -31,20 +32,10 @@ class AppServiceProvider extends ServiceProvider
         ArtigoBemMaterial::class => ArtigoBemMaterialPolicy::class,
     ];
 
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configurePasswordReset();
         $this->registerPolicies();
         $this->configureRateLimiting();
     }
@@ -64,9 +55,15 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Configure default behaviors for production-ready applications.
-     */
+    protected function configurePasswordReset(): void
+    {
+        ResetPassword::createUrlUsing(function (mixed $user, string $token): string {
+            $base = rtrim((string) config('app.password_reset_url', 'arqueopi://reset-password'), '/');
+
+            return $base.'?token='.$token.'&email='.urlencode((string) $user->email);
+        });
+    }
+
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);

@@ -15,7 +15,7 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Credenciais inválidas.'], 401);
+            return response()->json(['message' => __('errors.invalid_credentials')], 401);
         }
 
         $user = Auth::user();
@@ -23,7 +23,7 @@ class AuthController extends Controller
         if (! $user->ativo) {
             Auth::logout();
 
-            return response()->json(['message' => 'Conta desativada.'], 403);
+            return response()->json(['message' => __('errors.account_disabled')], 403);
         }
 
         $token = $user->createToken(
