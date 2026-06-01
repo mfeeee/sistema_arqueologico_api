@@ -18,6 +18,16 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
  *     type="http",
  *     scheme="bearer"
  * )
+ *
+ * @OA\Parameter(
+ *     parameter="AcceptLanguage",
+ *     name="Accept-Language",
+ *     in="header",
+ *     required=false,
+ *     description="Idioma das mensagens de resposta",
+ *
+ *     @OA\Schema(type="string", enum={"pt-BR", "en-US"}, example="pt-BR")
+ * )
  */
 abstract class Controller
 {

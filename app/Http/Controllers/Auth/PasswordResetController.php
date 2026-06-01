@@ -16,8 +16,7 @@ class PasswordResetController extends Controller
     {
         Password::sendResetLink($request->only('email'));
 
-        // Resposta genérica para não expor se o e-mail existe ou não.
-        return response()->json(['message' => 'Se este e-mail estiver cadastrado, você receberá as instruções em breve.']);
+        return response()->json(['message' => __('success.password_reset_sent')]);
     }
 
     public function confirmar(ConfirmarResetRequest $request): JsonResponse
@@ -31,13 +30,12 @@ class PasswordResetController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return response()->json(['message' => 'Senha redefinida com sucesso.']);
+            return response()->json(['message' => __('success.password_reset')]);
         }
 
         $mensagem = match ($status) {
-            Password::INVALID_TOKEN => 'Token inválido ou expirado.',
-            Password::INVALID_USER => 'Não foi possível redefinir a senha.',
-            default => 'Não foi possível redefinir a senha.',
+            Password::INVALID_TOKEN => __('errors.invalid_token'),
+            default => __('errors.password_reset_failed'),
         };
 
         return response()->json(['message' => $mensagem], 422);
