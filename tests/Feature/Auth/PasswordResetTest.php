@@ -124,4 +124,21 @@ class PasswordResetTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['email', 'token', 'password']);
     }
+
+    public function test_notificacao_usa_canal_mail_e_gera_deep_link_arqueopi(): void
+    {
+        $user = User::factory()->create(['ativo' => true]);
+        $token = 'test-token-123';
+
+        $notification = new RecuperacaoSenhaNotification($token);
+
+        $this->assertSame(['mail'], $notification->via($user));
+
+        $mail = $notification->toMail($user);
+        $actionUrl = $mail->actionUrl;
+
+        $this->assertStringStartsWith('arqueopi://reset-password', $actionUrl);
+        $this->assertStringContainsString('token='.$token, $actionUrl);
+        $this->assertStringContainsString('email='.urlencode($user->email), $actionUrl);
+    }
 }
