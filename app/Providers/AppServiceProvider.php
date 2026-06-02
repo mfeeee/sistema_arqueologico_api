@@ -19,8 +19,12 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
+use Symfony\Component\Mailer\Transport\TransportInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configurePasswordReset();
+        $this->configureBrevoTransport();
         $this->registerPolicies();
         $this->configureRateLimiting();
     }
@@ -46,6 +51,15 @@ class AppServiceProvider extends ServiceProvider
      * - public-api: endpoints de leitura sem autenticação obrigatória.
      *   Guests são limitados por IP; usuários autenticados têm limite maior por ID.
      */
+    protected function configureBrevoTransport(): void
+    {
+        Mail::extend('brevo', function (): TransportInterface {
+            return (new BrevoTransportFactory)->create(
+                Dsn::fromString((string) config('services.brevo.dsn')),
+            );
+        });
+    }
+
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('public-api', function (Request $request): Limit {
