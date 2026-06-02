@@ -140,5 +140,8 @@ class PasswordResetTest extends TestCase
         $this->assertStringStartsWith('arqueopi://reset-password', $actionUrl);
         $this->assertStringContainsString('token='.$token, $actionUrl);
         $this->assertStringContainsString('email='.urlencode($user->email), $actionUrl);
+
+        $introLines = $mail->introLines;
+        $this->assertNotEmpty(array_filter($introLines, fn ($line) => str_contains((string) $line, $token)));
     }
 }

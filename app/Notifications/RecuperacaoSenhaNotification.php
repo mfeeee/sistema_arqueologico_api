@@ -24,8 +24,10 @@ class RecuperacaoSenhaNotification extends Notification
         return (new MailMessage)
             ->subject(__('Recuperação de Senha'))
             ->line(__('Você recebeu este e-mail porque foi solicitada a recuperação de senha para sua conta.'))
+            ->line(__('Seu código de verificação é: **:token**', ['token' => $this->token]))
+            ->line(__('Abra o aplicativo e insira o código acima, ou clique no botão abaixo para redefinir diretamente.'))
             ->action(__('Redefinir Senha'), $resetUrl)
-            ->line(__('Este link expirará em :count minutos.', ['count' => config('auth.passwords.users.expire', 60)]))
+            ->line(__('Este código expirará em :count minutos.', ['count' => config('auth.passwords.users.expire', 60)]))
             ->line(__('Se você não solicitou a recuperação de senha, nenhuma ação é necessária.'));
     }
 
