@@ -16,12 +16,12 @@ class ProfileController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'id'             => $user->id,
-            'name'           => $user->name,
-            'email'          => $user->email,
-            'perfil'         => $user->perfil,
-            'classificacao'  => $user->classificacao,
-            'avatar_url'     => $user->avatar_url,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'perfil' => $user->perfil,
+            'classificacao' => $user->classificacao,
+            'avatar_url' => $user->avatar_url,
         ]);
     }
 
@@ -31,12 +31,12 @@ class ProfileController extends Controller
         $user->update($request->validated());
 
         return response()->json([
-            'id'             => $user->id,
-            'name'           => $user->name,
-            'email'          => $user->email,
-            'perfil'         => $user->perfil,
-            'classificacao'  => $user->classificacao,
-            'avatar_url'     => $user->avatar_url,
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'perfil' => $user->perfil,
+            'classificacao' => $user->classificacao,
+            'avatar_url' => $user->avatar_url,
         ]);
     }
 
@@ -50,7 +50,7 @@ class ProfileController extends Controller
         }
 
         $path = Storage::disk('s3')->putFile('avatars', $request->file('avatar'), 'public');
-        $url  = Storage::disk('s3')->url($path);
+        $url = Storage::disk('s3')->url($path);
 
         $user->update(['avatar_url' => $url]);
 

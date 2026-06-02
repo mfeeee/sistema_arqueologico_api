@@ -28,9 +28,9 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/me',           [ProfileController::class, 'show']);
-        Route::patch('/me',         [ProfileController::class, 'update']);
-        Route::post('/me/avatar',   [ProfileController::class, 'uploadAvatar']);
+        Route::get('/me', [ProfileController::class, 'show']);
+        Route::patch('/me', [ProfileController::class, 'update']);
+        Route::post('/me/avatar', [ProfileController::class, 'uploadAvatar']);
         Route::delete('/me/avatar', [ProfileController::class, 'deleteAvatar']);
     });
 });

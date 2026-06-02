@@ -15,9 +15,9 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'                  => ['sometimes', 'string', 'max:255'],
-            'email'                 => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $this->user()->id],
-            'password'              => ['sometimes', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,'.$this->user()->id],
+            'password' => ['sometimes', 'confirmed', Password::min(8)->mixedCase()->numbers()],
             'password_confirmation' => ['required_with:password'],
         ];
     }
