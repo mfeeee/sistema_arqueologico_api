@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialControll
 use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Mobile\ArtigoCientificoController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
@@ -27,7 +28,10 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/me',           [ProfileController::class, 'show']);
+        Route::patch('/me',         [ProfileController::class, 'update']);
+        Route::post('/me/avatar',   [ProfileController::class, 'uploadAvatar']);
+        Route::delete('/me/avatar', [ProfileController::class, 'deleteAvatar']);
     });
 });
 
