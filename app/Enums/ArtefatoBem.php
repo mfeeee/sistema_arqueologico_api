@@ -23,7 +23,7 @@ enum ArtefatoBem: string
     case SEDIMENTO = 'sedimento';
     case CERAMICA_VIDRADA = 'ceramicaVidrada';
     case METALICO = 'metalico';
-    case OSSOS_HUMANOS = 'ossosHumanosmanos';
+    case OSSOS_HUMANOS = 'ossosHumanos';
     case OUTROS = 'outros';
 
     public function label(): string
