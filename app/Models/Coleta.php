@@ -19,6 +19,7 @@ class Coleta extends Model
 
     protected $fillable = [
         'usuario_id',
+        'localizacao_id',
         'data_coleta',
         'latitude',
         'longitude',
@@ -49,6 +50,11 @@ class Coleta extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'usuario_id');
+    }
+
+    public function localizacao(): BelongsTo
+    {
+        return $this->belongsTo(Localizacao::class, 'localizacao_id');
     }
 
     public function bemMaterial(): HasOne
