@@ -90,6 +90,11 @@ class BemMaterial extends Model
         return $this->hasMany(Curadoria::class, 'bem_material_id');
     }
 
+    public function artefatoTipos(): HasMany
+    {
+        return $this->hasMany(BemArtefatoTipo::class, 'bem_material_id');
+    }
+
     protected function geom(): Attribute
     {
         return Attribute::make(
