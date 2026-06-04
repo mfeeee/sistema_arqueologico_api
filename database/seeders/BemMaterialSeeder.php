@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\BemMaterial;
-use App\Models\MidiaLink;
+use App\Models\Midia;
 use App\Models\ResponsavelSitio;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -224,10 +224,13 @@ class BemMaterialSeeder extends Seeder
             $bem->responsaveis()->delete();
 
             foreach ($dados['midias'] as $midia) {
-                MidiaLink::create([
-                    'bem_material_id' => $bem->id,
+                Midia::create([
+                    'mediable_type' => BemMaterial::class,
+                    'mediable_id' => $bem->id,
+                    'storage_disk' => 'external',
+                    'storage_path' => $midia['url'],
+                    'mime_type' => $this->mimeParaTipo($midia['tipo']),
                     'tipo' => $midia['tipo'],
-                    'url' => $midia['url'],
                     'descricao' => $midia['descricao'],
                 ]);
             }
@@ -241,5 +244,15 @@ class BemMaterialSeeder extends Seeder
         }
 
         $this->command->info('BemMaterialSeeder: 6 sítios do Piauí criados (3 publicados, 3 não publicados).');
+    }
+
+    private function mimeParaTipo(string $tipo): string
+    {
+        return match ($tipo) {
+            'imagem' => 'image/jpeg',
+            'video' => 'video/mp4',
+            'tese', 'artigo' => 'application/pdf',
+            default => 'application/octet-stream',
+        };
     }
 }
