@@ -21,6 +21,7 @@ class BemMaterial extends Model
 
     protected $fillable = [
         'coleta_id',
+        'localizacao_id',
         'curador_responsavel_id',
         'codigo_iphan',
         'nome_bem',
@@ -57,6 +58,11 @@ class BemMaterial extends Model
     public function coleta(): BelongsTo
     {
         return $this->belongsTo(Coleta::class, 'coleta_id');
+    }
+
+    public function localizacao(): BelongsTo
+    {
+        return $this->belongsTo(Localizacao::class, 'localizacao_id');
     }
 
     public function midias(): HasMany
