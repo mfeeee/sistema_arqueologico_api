@@ -2,7 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Models\MidiaLink;
+use App\Enums\TipoMidia;
+use App\Models\BemMaterial;
+use App\Models\Midia;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -22,7 +24,7 @@ class ProcessarUploadMidia implements ShouldQueue
 
     public function __construct(
         private readonly string $bemMaterialId,
-        private readonly string $tipoMidia,
+        private readonly TipoMidia $tipoMidia,
         private readonly string $caminhoTemporario,
         private readonly string $nomeOriginal,
         private readonly ?string $descricao = null,
@@ -41,16 +43,20 @@ class ProcessarUploadMidia implements ShouldQueue
 
             $extensao = pathinfo($this->nomeOriginal, PATHINFO_EXTENSION);
             $destino = "midias/{$this->bemMaterialId}/".Str::uuid().".{$extensao}";
+            $mimeType = Storage::disk('local')->mimeType($this->caminhoTemporario) ?: 'application/octet-stream';
 
             Storage::disk('public')->put(
                 $destino,
                 Storage::disk('local')->get($this->caminhoTemporario)
             );
 
-            MidiaLink::create([
-                'bem_material_id' => $this->bemMaterialId,
+            Midia::create([
+                'mediable_type' => BemMaterial::class,
+                'mediable_id' => $this->bemMaterialId,
+                'storage_disk' => 'public',
+                'storage_path' => $destino,
+                'mime_type' => $mimeType,
                 'tipo' => $this->tipoMidia,
-                'url' => Storage::disk('public')->url($destino),
                 'descricao' => $this->descricao,
             ]);
 

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BemMaterial extends Model
@@ -65,9 +66,9 @@ class BemMaterial extends Model
         return $this->belongsTo(Localizacao::class, 'localizacao_id');
     }
 
-    public function midias(): HasMany
+    public function midias(): MorphMany
     {
-        return $this->hasMany(MidiaLink::class, 'bem_material_id');
+        return $this->morphMany(Midia::class, 'mediable');
     }
 
     public function responsavel(): BelongsTo

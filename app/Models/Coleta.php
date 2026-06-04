@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Coleta extends Model
 {
@@ -66,6 +67,11 @@ class Coleta extends Model
     public function artefatoTipos(): HasMany
     {
         return $this->hasMany(ColetaArtefatoTipo::class, 'coleta_id');
+    }
+
+    public function midias(): MorphMany
+    {
+        return $this->morphMany(Midia::class, 'mediable');
     }
 
     public function scopeDoUsuario($query, string $usuarioId): mixed
