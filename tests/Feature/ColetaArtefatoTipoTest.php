@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
 use App\Models\ColetaArtefatoTipo;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -46,7 +47,7 @@ class ColetaArtefatoTipoTest extends TestCase
             'artefato_tipo_id' => $artefatoTipo->id,
         ]);
 
-        $this->expectException(\Illuminate\Database\UniqueConstraintViolationException::class);
+        $this->expectException(UniqueConstraintViolationException::class);
 
         ColetaArtefatoTipo::factory()->create([
             'coleta_id' => $coleta->id,
