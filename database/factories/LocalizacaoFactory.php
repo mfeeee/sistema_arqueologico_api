@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Localizacao;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @extends Factory<Localizacao>
@@ -36,7 +37,7 @@ class LocalizacaoFactory extends Factory
     public function comGeom(float $latitude, float $longitude): static
     {
         return $this->afterCreating(function (Localizacao $localizacao) use ($latitude, $longitude) {
-            \Illuminate\Support\Facades\DB::statement(
+            DB::statement(
                 'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
                 [$longitude, $latitude, $localizacao->id]
             );
