@@ -20,4 +20,9 @@ class ArtefatoTipo extends Model
     {
         return $this->hasMany(ColetaArtefatoTipo::class, 'artefato_tipo_id');
     }
+
+    public function bemArtefatoTipos(): HasMany
+    {
+        return $this->hasMany(BemArtefatoTipo::class, 'artefato_tipo_id');
+    }
 }
