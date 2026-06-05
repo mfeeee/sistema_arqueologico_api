@@ -83,7 +83,7 @@ class BemMaterial extends Model
 
     public function responsaveis(): HasMany
     {
-        return $this->hasMany(ResponsavelSitio::class, 'bem_material_id');
+        return $this->hasMany(BemResponsavel::class, 'bem_material_id');
     }
 
     public function curadorias(): HasMany
