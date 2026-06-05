@@ -52,7 +52,7 @@ class Curadoria extends Model
 
     public function curador(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'curador_id');
+        return $this->belongsTo(User::class, 'usuario_id');
     }
 
     public function auditorias(): HasMany
