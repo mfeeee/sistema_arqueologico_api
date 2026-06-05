@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\PapelResponsavelBem;
 use App\Models\BemMaterial;
+use App\Models\BemResponsavel;
 use App\Models\Midia;
-use App\Models\ResponsavelSitio;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -219,7 +221,7 @@ class BemMaterialSeeder extends Seeder
                 [$bem->longitude, $bem->latitude, $bem->id]
             );
 
-            // Remove mídias e responsável existentes antes de recriar (idempotência).
+            // Remove mídias e responsáveis existentes antes de recriar (idempotência).
             $bem->midias()->delete();
             $bem->responsaveis()->delete();
 
@@ -235,12 +237,15 @@ class BemMaterialSeeder extends Seeder
                 ]);
             }
 
-            ResponsavelSitio::create([
-                'bem_material_id' => $bem->id,
-                'contato_nome' => $dados['responsavel']['contato_nome'],
-                'contato_email' => $dados['responsavel']['contato_email'],
-                'contato_telefone' => $dados['responsavel']['contato_telefone'],
-            ]);
+            $usuario = User::firstOrCreate(
+                ['email' => $dados['responsavel']['contato_email']],
+                ['name' => $dados['responsavel']['contato_nome'], 'password' => bcrypt('secret')]
+            );
+
+            BemResponsavel::firstOrCreate(
+                ['bem_material_id' => $bem->id, 'user_id' => $usuario->id],
+                ['papel' => PapelResponsavelBem::PESQUISADOR]
+            );
         }
 
         $this->command->info('BemMaterialSeeder: 6 sítios do Piauí criados (3 publicados, 3 não publicados).');
