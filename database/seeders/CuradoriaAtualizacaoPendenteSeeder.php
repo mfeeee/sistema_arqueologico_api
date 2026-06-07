@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
 use App\Models\Curadoria;
+use App\Models\Localizacao;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -31,14 +32,17 @@ class CuradoriaAtualizacaoPendenteSeeder extends Seeder
 {
     private function criarColeta(array $dados): Coleta
     {
-        $coleta = Coleta::create($dados);
+        $localizacao = Localizacao::create([
+            'uf' => $dados['uf'] ?? null,
+            'municipio' => $dados['municipio'] ?? null,
+        ]);
 
         DB::statement(
-            'UPDATE coletas SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-            [$coleta->longitude, $coleta->latitude, $coleta->id]
+            'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+            [$dados['longitude'], $dados['latitude'], $localizacao->id]
         );
 
-        return $coleta;
+        return Coleta::create([...$dados, 'localizacao_id' => $localizacao->id]);
     }
 
     public function run(): void

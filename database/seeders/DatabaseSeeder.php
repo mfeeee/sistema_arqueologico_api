@@ -9,8 +9,9 @@ use Illuminate\Database\Seeder;
  *
  * Ordem de execução obrigatória (respeita dependências de FK):
  *
- *  1. UserSeeder              — Cria os 3 usuários fixos (admin, curador, coletor).
- *  2. BemMaterialSeeder       — Cria 6 sítios base do Piauí + mídias + responsáveis.
+ *  1. ArtefatoTipoSeeder      — Popula catálogo de tipos de artefato (derivado de ArtefatoBem).
+ *  2. UserSeeder              — Cria os 3 usuários fixos (admin, curador, coletor).
+ *  3. BemMaterialSeeder       — Cria 6 sítios base do Piauí + mídias + responsáveis.
  *  3. ColetaECuradoriaSeeder  — Gera os cenários A–F de curadoria (entidade_tipo=coleta):
  *       A: coletas pendentes (intenção: criarSitio quando avaliado)
  *       B: aprovação → criarSitio   + auditoria Inserção
@@ -37,6 +38,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            ArtefatoTipoSeeder::class,
             UserSeeder::class,
             BemMaterialSeeder::class,
             ColetaECuradoriaSeeder::class,

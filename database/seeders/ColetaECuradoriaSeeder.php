@@ -2,10 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ArtefatoBem;
+use App\Models\ArtefatoTipo;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
+use App\Models\ColetaArtefatoTipo;
 use App\Models\Curadoria;
+use App\Models\Localizacao;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -31,7 +35,7 @@ use Illuminate\Support\Facades\DB;
  * │ Caso D   │ 3 coletas aprovadas → atualizarSitio MODIFICANDO campo com valor      │
  * │          │   Alvo: PI-BASE-0001 (nome_bem), PI-BASE-0002 (descricao_atualizacao) │
  * │          │          PI-BASE-0003 (meios_acesso)                                   │
- * │          │   + auditoria Alteração (valor_anterior=full snapshot, valor_novo=1 campo)│
+ * │          │   + auditoria Alteração (valor_anterior=full snapshot, valor_novo=1 campo) │
  * ├──────────┼────────────────────────────────────────────────────────────────────────┤
  * │ Caso E   │ 3 coletas aprovadas → atualizarSitio MÚLTIPLOS CAMPOS (null + valor)  │
  * │          │   Alvo: PI-NOVO-0101, PI-NOVO-0102, PI-NOVO-0103 (criados no Caso B)  │
@@ -45,19 +49,61 @@ use Illuminate\Support\Facades\DB;
  */
 class ColetaECuradoriaSeeder extends Seeder
 {
-    // ─── helper: cria a coleta e já popula o geom via PostGIS ───────────────────
+    /** @var array<string, ArtefatoTipo> Tipos indexados por nome, carregados no início do run(). */
+    private array $artefatoTipos = [];
+
+    // ─── helper: cria Localizacao com geom PostGIS ──────────────────────────────
+
+    /** @param array<string, mixed> $dados */
+    private function criarLocalizacao(array $dados): Localizacao
+    {
+        $localizacao = Localizacao::create([
+            'uf' => $dados['uf'] ?? null,
+            'municipio' => $dados['municipio'] ?? null,
+        ]);
+
+        DB::statement(
+            'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+            [$dados['longitude'], $dados['latitude'], $localizacao->id]
+        );
+
+        return $localizacao;
+    }
+
+    // ─── helper: cria Coleta com localizacao_id ─────────────────────────────────
 
     /** @param array<string, mixed> $dados */
     private function criarColeta(array $dados): Coleta
     {
-        $coleta = Coleta::create($dados);
+        $localizacao = $this->criarLocalizacao($dados);
 
-        DB::statement(
-            'UPDATE coletas SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-            [$coleta->longitude, $coleta->latitude, $coleta->id]
-        );
+        // Remove chaves que pertencem apenas à Localizacao e não existem em coletas
+        $coletaDados = array_diff_key($dados, array_flip(['municipio']));
 
-        return $coleta;
+        return Coleta::create([...$coletaDados, 'localizacao_id' => $localizacao->id]);
+    }
+
+    // ─── helper: vincula artefatos da coleta à tabela coleta_artefato_tipos ─────
+
+    /** @param string[] $artefatos Valores do enum ArtefatoBem (ex: 'litico', 'ceramica'). */
+    private function vincularArtefatoTipos(Coleta $coleta, array $artefatos): void
+    {
+        foreach ($artefatos as $valor) {
+            try {
+                $nome = ArtefatoBem::from($valor)->label();
+            } catch (\ValueError) {
+                continue;
+            }
+
+            $tipo = $this->artefatoTipos[$nome] ?? null;
+
+            if ($tipo) {
+                ColetaArtefatoTipo::firstOrCreate([
+                    'coleta_id' => $coleta->id,
+                    'artefato_tipo_id' => $tipo->id,
+                ]);
+            }
+        }
     }
 
     // ─── helper: snapshot completo de um BemMaterial para auditoria ─────────────
@@ -89,6 +135,8 @@ class ColetaECuradoriaSeeder extends Seeder
 
     public function run(): void
     {
+        $this->artefatoTipos = ArtefatoTipo::all()->keyBy('nome')->all();
+
         $coletor = User::where('email', 'coletor@arqueologia.test')->firstOrFail();
         $curador = User::where('email', 'curador@arqueologia.test')->firstOrFail();
         $admin = User::where('email', 'admin@arqueologia.test')->firstOrFail();
@@ -154,6 +202,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'versao' => 1,
                 'dados_coletados' => $d['dados_coletados'],
             ]);
+
+            $this->vincularArtefatoTipos($coleta, $d['artefatos']);
 
             Curadoria::create([
                 'entidade_tipo' => 'coleta',
@@ -227,6 +277,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'dados_coletados' => $d['dados_coletados'],
             ]);
 
+            $this->vincularArtefatoTipos($coleta, $d['artefatos']);
+
             $codigoIphan = 'PI-NOVO-'.str_pad($iphanSeqB++, 4, '0', STR_PAD_LEFT);
 
             $bem = BemMaterial::create([
@@ -284,7 +336,7 @@ class ColetaECuradoriaSeeder extends Seeder
 
         // C1 — PI-BASE-0004: nomes_populares era null → preenche
         $bemC1 = $bemBase['PI-BASE-0004'];
-        $snapC1 = $this->snapshot($bemC1); // nomes_populares=null aqui
+        $snapC1 = $this->snapshot($bemC1);
         $novoNomePopular = 'Cânion do Poti — Gruta Abrigada';
 
         $coletaC1 = $this->criarColeta([
@@ -296,6 +348,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'natureza_bem' => $bemC1->natureza?->value ?? $bemC1->natureza,
             'tipo_bem' => $bemC1->tipo?->value ?? $bemC1->tipo,
             'uf' => $bemC1->uf,
+            'municipio' => $bemC1->municipio,
             'artefatos' => $bemC1->artefatos ?? [],
             'status_sincronizacao' => 'sincronizado',
             'versao' => 2,
@@ -304,6 +357,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'responsavel' => ['nome' => 'Equipe Levantamento Norte', 'telefone' => '86991230021'],
             ],
         ]);
+
+        $this->vincularArtefatoTipos($coletaC1, $bemC1->artefatos ?? []);
 
         $curadoriaC1 = Curadoria::create([
             'entidade_tipo' => 'coleta',
@@ -330,7 +385,7 @@ class ColetaECuradoriaSeeder extends Seeder
 
         // C2 — PI-BASE-0005: meios_acesso era null → preenche
         $bemC2 = $bemBase['PI-BASE-0005'];
-        $snapC2 = $this->snapshot($bemC2); // meios_acesso=null aqui
+        $snapC2 = $this->snapshot($bemC2);
         $novoMeiosAcesso = 'Acesso pela PI-247, sentido Buriti dos Montes — São Gonçalo do Gurgueia. '
             .'Veículo 4x4 obrigatório. Na estação chuvosa (jan–mar) a pista fica intransitável; '
             .'consultar condições com a SEMARH-PI antes da expedição.';
@@ -344,6 +399,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'natureza_bem' => $bemC2->natureza?->value ?? $bemC2->natureza,
             'tipo_bem' => $bemC2->tipo?->value ?? $bemC2->tipo,
             'uf' => $bemC2->uf,
+            'municipio' => $bemC2->municipio,
             'artefatos' => $bemC2->artefatos ?? [],
             'status_sincronizacao' => 'sincronizado',
             'versao' => 2,
@@ -352,6 +408,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'responsavel' => ['nome' => 'Dra. Camila Nogueira', 'telefone' => '86998123456'],
             ],
         ]);
+
+        $this->vincularArtefatoTipos($coletaC2, $bemC2->artefatos ?? []);
 
         $curadoriaC2 = Curadoria::create([
             'entidade_tipo' => 'coleta',
@@ -378,7 +436,7 @@ class ColetaECuradoriaSeeder extends Seeder
 
         // C3 — PI-BASE-0006: municipio e cep eram null → preenche
         $bemC3 = $bemBase['PI-BASE-0006'];
-        $snapC3 = $this->snapshot($bemC3); // municipio=null, cep=null
+        $snapC3 = $this->snapshot($bemC3);
 
         $coletaC3 = $this->criarColeta([
             'usuario_id' => $coletor->id,
@@ -397,6 +455,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'responsavel' => ['nome' => 'Dr. François Parenti', 'telefone' => '86991230022'],
             ],
         ]);
+
+        $this->vincularArtefatoTipos($coletaC3, $bemC3->artefatos ?? []);
 
         $curadoriaC3 = Curadoria::create([
             'entidade_tipo' => 'coleta',
@@ -440,6 +500,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'natureza_bem' => $bemD1->natureza?->value ?? $bemD1->natureza,
             'tipo_bem' => $bemD1->tipo?->value ?? $bemD1->tipo,
             'uf' => $bemD1->uf,
+            'municipio' => $bemD1->municipio,
             'artefatos' => $bemD1->artefatos ?? [],
             'status_sincronizacao' => 'sincronizado',
             'versao' => 3,
@@ -448,6 +509,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'responsavel' => ['nome' => 'Equipe de Revisão IPHAN', 'telefone' => '86991230031'],
             ],
         ]);
+
+        $this->vincularArtefatoTipos($coletaD1, $bemD1->artefatos ?? []);
 
         $curadoriaD1 = Curadoria::create([
             'entidade_tipo' => 'coleta',
@@ -488,6 +551,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'natureza_bem' => $bemD2->natureza?->value ?? $bemD2->natureza,
             'tipo_bem' => $bemD2->tipo?->value ?? $bemD2->tipo,
             'uf' => $bemD2->uf,
+            'municipio' => $bemD2->municipio,
             'artefatos' => $bemD2->artefatos ?? [],
             'status_sincronizacao' => 'sincronizado',
             'versao' => 2,
@@ -496,6 +560,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'responsavel' => ['nome' => 'Prof. Eric Boëda', 'telefone' => '86358213890'],
             ],
         ]);
+
+        $this->vincularArtefatoTipos($coletaD2, $bemD2->artefatos ?? []);
 
         $curadoriaD2 = Curadoria::create([
             'entidade_tipo' => 'coleta',
@@ -536,6 +602,7 @@ class ColetaECuradoriaSeeder extends Seeder
             'natureza_bem' => $bemD3->natureza?->value ?? $bemD3->natureza,
             'tipo_bem' => $bemD3->tipo?->value ?? $bemD3->tipo,
             'uf' => $bemD3->uf,
+            'municipio' => $bemD3->municipio,
             'artefatos' => $bemD3->artefatos ?? [],
             'status_sincronizacao' => 'sincronizado',
             'versao' => 2,
@@ -544,6 +611,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'responsavel' => ['nome' => 'Msc. Ana Paula Sousa', 'telefone' => '86327644550'],
             ],
         ]);
+
+        $this->vincularArtefatoTipos($coletaD3, $bemD3->artefatos ?? []);
 
         $curadoriaD3 = Curadoria::create([
             'entidade_tipo' => 'coleta',
@@ -634,6 +703,7 @@ class ColetaECuradoriaSeeder extends Seeder
             $alt = $alteracoesE[$idx];
             $snapE = $this->snapshot($bemAlvo->fresh());
             $avaliadoEm = $alt['avaliado_em'];
+            $artefatosE = $alt['artefatos_novos'] ?? $bemAlvo->artefatos ?? [];
 
             $coletaE = $this->criarColeta([
                 'usuario_id' => $coletor->id,
@@ -644,11 +714,13 @@ class ColetaECuradoriaSeeder extends Seeder
                 'natureza_bem' => $bemAlvo->natureza?->value ?? $bemAlvo->natureza,
                 'tipo_bem' => $bemAlvo->tipo?->value ?? $bemAlvo->tipo,
                 'uf' => $bemAlvo->uf ?? 'PI',
-                'artefatos' => $alt['artefatos_novos'] ?? $bemAlvo->artefatos ?? [],
+                'artefatos' => $artefatosE,
                 'status_sincronizacao' => 'sincronizado',
                 'versao' => 2,
                 'dados_coletados' => $alt['dados_coletados'],
             ]);
+
+            $this->vincularArtefatoTipos($coletaE, $artefatosE);
 
             $curadoriaE = Curadoria::create([
                 'entidade_tipo' => 'coleta',
@@ -724,6 +796,8 @@ class ColetaECuradoriaSeeder extends Seeder
                     'responsavel' => ['nome' => 'Equipe de Campo', 'telefone' => '86000000000'],
                 ],
             ]);
+
+            $this->vincularArtefatoTipos($coleta, $d['artefatos']);
 
             Curadoria::create([
                 'entidade_tipo' => 'coleta',
