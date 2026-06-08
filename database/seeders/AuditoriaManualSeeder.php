@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
 /**
- * Caso F — Auditoria Manual.
+ * Caso G — Auditoria Manual.
  *
  * Simula 3 operações realizadas diretamente pelo painel de administração,
  * sem passar por coleta ou curadoria.
@@ -118,6 +118,6 @@ class AuditoriaManualSeeder extends Seeder
             'valor_novo' => null,
         ]);
 
-        $this->command->info('AuditoriaManualSeeder: 3 auditorias manuais (Caso F) criadas.');
+        $this->command->info('AuditoriaManualSeeder: 3 auditorias manuais (Caso G) criadas.');
     }
 }
