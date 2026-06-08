@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SubmissaoArtigo extends Model
 {
@@ -52,5 +53,10 @@ class SubmissaoArtigo extends Model
     public function artigo(): BelongsTo
     {
         return $this->belongsTo(ArtigoCientifico::class, 'artigo_id');
+    }
+
+    public function autores(): HasMany
+    {
+        return $this->hasMany(SubmissaoAutor::class, 'submissao_id')->orderBy('ordem');
     }
 }
