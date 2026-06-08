@@ -52,4 +52,9 @@ class ArtigoCientifico extends Model
     {
         return $this->hasMany(ArtigoBemMaterial::class, 'artigo_id');
     }
+
+    public function autores(): HasMany
+    {
+        return $this->hasMany(ArtigoAutor::class, 'artigo_id')->orderBy('ordem');
+    }
 }
