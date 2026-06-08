@@ -6,6 +6,7 @@ use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\TipoBem;
 use App\Models\BemMaterial;
+use App\Models\Localizacao;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
 
@@ -150,6 +151,13 @@ class BemMaterialFactory extends Factory
             'latitude' => $latitude,
             'longitude' => $longitude,
             'geojson' => ['type' => 'Point', 'coordinates' => [$longitude, $latitude]],
+        ]);
+    }
+
+    public function comLocalizacao(): static
+    {
+        return $this->state(fn () => [
+            'localizacao_id' => Localizacao::factory(),
         ]);
     }
 
