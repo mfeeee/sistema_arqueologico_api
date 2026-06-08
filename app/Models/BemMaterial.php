@@ -96,6 +96,11 @@ class BemMaterial extends Model
         return $this->hasMany(BemArtefatoTipo::class, 'bem_material_id');
     }
 
+    public function nomesPopulares(): HasMany
+    {
+        return $this->hasMany(BemNomePopular::class, 'bem_material_id');
+    }
+
     protected function geom(): Attribute
     {
         return Attribute::make(
