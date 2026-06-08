@@ -2,12 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\ArtigoAutor;
 use App\Models\ArtigoBemMaterial;
 use App\Models\ArtigoCientifico;
 use App\Models\Auditoria;
 use App\Models\BemMaterial;
 use App\Models\Curadoria;
 use App\Models\SubmissaoArtigo;
+use App\Models\SubmissaoAutor;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -61,7 +63,7 @@ class ArtigoCientificoSeeder extends Seeder
             [
                 'doi' => '10.1590/1981-5921.2024.pedrafurada',
                 'titulo' => 'Revisão estratigráfica do Sítio Boqueirão da Pedra Furada: novas datações por AMS',
-                'autores' => 'Pessis, A.-M.; Guidon, N.; Boëda, E.',
+                'autores' => ['Pessis, A.-M.', 'Guidon, N.', 'Boëda, E.'],
                 'ano_publicacao' => 2024,
                 'periodico' => 'Revista de Arqueologia',
                 'idioma' => 'pt',
@@ -79,7 +81,7 @@ class ArtigoCientificoSeeder extends Seeder
             [
                 'doi' => '10.1590/2176-7912.2023.tocaboqueirnao',
                 'titulo' => 'Fogueiras pré-históricas da Toca do Boqueirão do Sítio da Pedra Furada: análise antracológica',
-                'autores' => 'Laureano da Rosa, J.; Boëda, E.',
+                'autores' => ['Laureano da Rosa, J.', 'Boëda, E.'],
                 'ano_publicacao' => 2023,
                 'periodico' => 'Fumdhamentos',
                 'idioma' => 'pt',
@@ -96,7 +98,7 @@ class ArtigoCientificoSeeder extends Seeder
             [
                 'doi' => '10.11606/issn.2179-0892.ra.2022.setecidades',
                 'titulo' => 'Pinturas rupestres do Parque Nacional Serra das Sete Cidades: levantamento e classificação tradição Nordeste',
-                'autores' => 'Guidon, N.; Martins, G.R.; Vergne, C.',
+                'autores' => ['Guidon, N.', 'Martins, G.R.', 'Vergne, C.'],
                 'ano_publicacao' => 2022,
                 'periodico' => 'Revista de Antropologia USP',
                 'idioma' => 'pt',
@@ -116,7 +118,7 @@ class ArtigoCientificoSeeder extends Seeder
             [
                 'doi' => '10.1590/1981-5921.2024.pedrafurada-paleoambiente',
                 'titulo' => 'Paleoambiente da Serra da Capivara no Pleistoceno tardio: análise polínica e sedimentológica',
-                'autores' => 'Parenti, F.; Guidon, N.',
+                'autores' => ['Parenti, F.', 'Guidon, N.'],
                 'ano_publicacao' => 2024,
                 'periodico' => 'Quaternary Science Reviews',
                 'idioma' => 'en',
@@ -148,7 +150,6 @@ class ArtigoCientificoSeeder extends Seeder
                 'adicionado_por' => $curador->id,
                 'doi' => $dadosArtigo['doi'],
                 'titulo' => $dadosArtigo['titulo'],
-                'autores' => $dadosArtigo['autores'],
                 'ano_publicacao' => $dadosArtigo['ano_publicacao'],
                 'periodico' => $dadosArtigo['periodico'],
                 'idioma' => $dadosArtigo['idioma'],
@@ -156,6 +157,14 @@ class ArtigoCientificoSeeder extends Seeder
                 'link_acesso' => $dadosArtigo['link_acesso'],
                 'verificado' => true,
             ]);
+
+            foreach ($dadosArtigo['autores'] as $ordem => $nomeAutor) {
+                ArtigoAutor::create([
+                    'artigo_id' => $artigo->id,
+                    'nome_autor' => $nomeAutor,
+                    'ordem' => $ordem,
+                ]);
+            }
 
             if ($primeiroArtigo === null) {
                 $primeiroArtigo = $artigo;
@@ -168,7 +177,6 @@ class ArtigoCientificoSeeder extends Seeder
                 'artigo_id' => $artigo->id,
                 'doi' => $dadosArtigo['doi'],
                 'titulo' => null,
-                'autores' => null,
                 'ano_publicacao' => $dadosArtigo['ano_publicacao'],
                 'periodico' => $dadosArtigo['periodico'],
                 'idioma' => $dadosArtigo['idioma'],
@@ -230,7 +238,7 @@ class ArtigoCientificoSeeder extends Seeder
                 'bem_codigo' => 'PI-BASE-0004',
                 'doi' => '10.1590/2317-1529.2025.caniondopoti',
                 'titulo' => 'Arqueologia do Cânion do Poti: prospecção sistemática e repertório lítico',
-                'autores' => 'Fogaça, E.; Guidon, N.',
+                'autores' => ['Fogaça, E.', 'Guidon, N.'],
                 'ano_publicacao' => 2025,
                 'periodico' => 'Revista Brasileira de Geografia',
                 'idioma' => 'pt',
@@ -246,7 +254,7 @@ class ArtigoCientificoSeeder extends Seeder
                 'bem_codigo' => 'PI-BASE-0005',
                 'doi' => '10.1590/1516-635x.2025.nascentesd',
                 'titulo' => 'Fauna pleistocênica das Nascentes do Rio Gurgueia: registro osteológico e contexto paleoclimático',
-                'autores' => 'Araújo, A.G.M.; Neves, W.A.',
+                'autores' => ['Araújo, A.G.M.', 'Neves, W.A.'],
                 'ano_publicacao' => 2025,
                 'periodico' => 'Pesquisas: Geociências',
                 'idioma' => 'pt',
@@ -275,7 +283,6 @@ class ArtigoCientificoSeeder extends Seeder
                 'artigo_id' => null,
                 'doi' => $dados['doi'],
                 'titulo' => $dados['titulo'],
-                'autores' => $dados['autores'],
                 'ano_publicacao' => $dados['ano_publicacao'],
                 'periodico' => $dados['periodico'],
                 'idioma' => $dados['idioma'],
@@ -285,6 +292,14 @@ class ArtigoCientificoSeeder extends Seeder
                 'trecho_relevante' => $dados['trecho_relevante'],
                 'status' => 'pendente',
             ]);
+
+            foreach ($dados['autores'] as $ordem => $nomeAutor) {
+                SubmissaoAutor::create([
+                    'submissao_id' => $submissao->id,
+                    'nome_autor' => $nomeAutor,
+                    'ordem' => $ordem,
+                ]);
+            }
 
             Curadoria::create([
                 'entidade_tipo' => 'submissao_artigo',
@@ -317,7 +332,6 @@ class ArtigoCientificoSeeder extends Seeder
                 'artigo_id' => $primeiroArtigo->id,
                 'doi' => $primeiroArtigo->doi,
                 'titulo' => null,
-                'autores' => null,
                 'ano_publicacao' => $primeiroArtigo->ano_publicacao,
                 'periodico' => $primeiroArtigo->periodico,
                 'idioma' => $primeiroArtigo->idioma,
@@ -356,7 +370,6 @@ class ArtigoCientificoSeeder extends Seeder
             'artigo_id' => null,
             'doi' => null,
             'titulo' => 'Novas Evidências Arqueológicas no Nordeste Brasileiro (preprint sem revisão)',
-            'autores' => 'Autor Desconhecido',
             'ano_publicacao' => 2025,
             'periodico' => 'Preprint',
             'idioma' => 'pt',
@@ -365,6 +378,12 @@ class ArtigoCientificoSeeder extends Seeder
             'tipo_mencao' => 'citacao',
             'trecho_relevante' => null,
             'status' => 'rejeitado',
+        ]);
+
+        SubmissaoAutor::create([
+            'submissao_id' => $submissaoD->id,
+            'nome_autor' => 'Autor Desconhecido',
+            'ordem' => 0,
         ]);
 
         Curadoria::create([
