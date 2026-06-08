@@ -7,6 +7,7 @@ use App\Enums\PapelResponsavelBem;
 use App\Models\ArtefatoTipo;
 use App\Models\BemArtefatoTipo;
 use App\Models\BemMaterial;
+use App\Models\BemNomePopular;
 use App\Models\BemResponsavel;
 use App\Models\Localizacao;
 use App\Models\Midia;
@@ -35,7 +36,7 @@ class BemMaterialSeeder extends Seeder
             [
                 'codigo_iphan' => 'PI-BASE-0001',
                 'nome_bem' => 'Sítio Boqueirão da Pedra Furada',
-                'nomes_populares' => 'Pedra Furada',
+                'nomes_populares' => ['Pedra Furada', 'Serra da Capivara I', 'Boqueirão Grande'],
                 'natureza' => 'bemArqueologico',
                 'tipo' => 'sitio',
                 'meios_acesso' => 'Acesso pela BR-020 até São Raimundo Nonato; trilha de 8 km ao sítio.',
@@ -62,7 +63,7 @@ class BemMaterialSeeder extends Seeder
             [
                 'codigo_iphan' => 'PI-BASE-0002',
                 'nome_bem' => 'Toca do Boqueirão do Sítio da Pedra Furada',
-                'nomes_populares' => 'Toca dos Cabloquinhos',
+                'nomes_populares' => ['Toca dos Cabloquinhos', 'Boqueirão Norte'],
                 'natureza' => 'bemArqueologico',
                 'tipo' => 'sitio',
                 'meios_acesso' => 'Acesso monitorado pelo Parque Nacional Serra da Capivara, guia obrigatório.',
@@ -89,7 +90,7 @@ class BemMaterialSeeder extends Seeder
             [
                 'codigo_iphan' => 'PI-BASE-0003',
                 'nome_bem' => 'Sítio das Pinturas Rupestres de Sete Cidades',
-                'nomes_populares' => 'Sete Cidades',
+                'nomes_populares' => ['Sete Cidades', 'Pedras das Sete Cidades'],
                 'natureza' => 'bemArqueologico',
                 'tipo' => 'sitio',
                 'meios_acesso' => 'Acesso pela PI-111 até Piracuruca; entrada pelo PARNA Sete Cidades.',
@@ -120,7 +121,7 @@ class BemMaterialSeeder extends Seeder
             [
                 'codigo_iphan' => 'PI-BASE-0004',
                 'nome_bem' => 'Abrigo do Cânion do Rio Poti',
-                'nomes_populares' => null, // ← será preenchido no Cenário C1
+                'nomes_populares' => [], // ← será preenchido no Cenário C1
                 'natureza' => 'bemArqueologico',
                 'tipo' => 'sitio',
                 'meios_acesso' => 'Acesso via APA do Rio Poti; coordenadas necessárias para navegação.',
@@ -147,7 +148,7 @@ class BemMaterialSeeder extends Seeder
             [
                 'codigo_iphan' => 'PI-BASE-0005',
                 'nome_bem' => 'Sítio das Nascentes do Rio Parnaíba',
-                'nomes_populares' => 'Nascentes do Parnaíba',
+                'nomes_populares' => ['Nascentes do Parnaíba', 'Sítio Buriti'],
                 'natureza' => 'bemPaleontologico',
                 'tipo' => 'sitio',
                 'meios_acesso' => null, // ← será preenchido no Cenário C2
@@ -174,7 +175,7 @@ class BemMaterialSeeder extends Seeder
             [
                 'codigo_iphan' => 'PI-BASE-0006',
                 'nome_bem' => 'Toca do Cosmos',
-                'nomes_populares' => 'Cosmos — Abrigo da Anta',
+                'nomes_populares' => ['Cosmos', 'Abrigo da Anta'],
                 'natureza' => 'bemArqueologico',
                 'tipo' => 'acervoOuColecao',
                 'meios_acesso' => 'Trilha restrita; acesso apenas com pesquisadores credenciados pela FUMDHAM.',
@@ -209,7 +210,6 @@ class BemMaterialSeeder extends Seeder
                 [
                     'codigo_iphan' => $dados['codigo_iphan'],
                     'nome_bem' => $dados['nome_bem'],
-                    'nomes_populares' => $dados['nomes_populares'],
                     'natureza' => $dados['natureza'],
                     'tipo' => $dados['tipo'],
                     'meios_acesso' => $dados['meios_acesso'],
@@ -234,10 +234,18 @@ class BemMaterialSeeder extends Seeder
                 [$bem->longitude, $bem->latitude, $bem->id]
             );
 
-            // Remove mídias, responsáveis e artefato_tipos existentes antes de recriar (idempotência).
+            // Remove relacionamentos antes de recriar (idempotência).
             $bem->midias()->delete();
             $bem->responsaveis()->delete();
             $bem->artefatoTipos()->delete();
+            $bem->nomesPopulares()->delete();
+
+            foreach ($dados['nomes_populares'] as $ordem => $nome) {
+                BemNomePopular::create([
+                    'bem_material_id' => $bem->id,
+                    'nome' => $nome,
+                ]);
+            }
 
             foreach ($dados['midias'] as $midia) {
                 Midia::create([
