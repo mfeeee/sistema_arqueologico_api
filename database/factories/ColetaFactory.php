@@ -7,6 +7,7 @@ use App\Enums\NaturezaBem;
 use App\Enums\StatusColeta;
 use App\Enums\TipoBem;
 use App\Models\Coleta;
+use App\Models\Localizacao;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -102,6 +103,13 @@ class ColetaFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'status_sincronizacao' => StatusColeta::CONFLITO,
             'versao' => fake()->numberBetween(2, 5),
+        ]);
+    }
+
+    public function comLocalizacao(): static
+    {
+        return $this->state(fn () => [
+            'localizacao_id' => Localizacao::factory(),
         ]);
     }
 }
