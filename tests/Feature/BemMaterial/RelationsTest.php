@@ -76,7 +76,7 @@ class RelationsTest extends TestCase
     public function test_bem_artefato_tipo_com_novo_tipo_registrado(): void
     {
         $bem = BemMaterial::factory()->create();
-        $vinculo = BemArtefatoTipo::factory()
+        BemArtefatoTipo::factory()
             ->novoTipo('Fragmento de obsidiana translúcida')
             ->create(['bem_material_id' => $bem->id]);
 
