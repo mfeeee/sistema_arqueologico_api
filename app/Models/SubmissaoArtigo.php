@@ -21,7 +21,6 @@ class SubmissaoArtigo extends Model
         'artigo_id',
         'doi',
         'titulo',
-        'autores',
         'ano_publicacao',
         'periodico',
         'idioma',
