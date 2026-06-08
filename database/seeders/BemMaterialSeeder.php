@@ -2,9 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ArtefatoBem;
 use App\Enums\PapelResponsavelBem;
+use App\Models\ArtefatoTipo;
+use App\Models\BemArtefatoTipo;
 use App\Models\BemMaterial;
 use App\Models\BemResponsavel;
+use App\Models\Localizacao;
 use App\Models\Midia;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -19,8 +23,13 @@ use Illuminate\Support\Facades\DB;
  */
 class BemMaterialSeeder extends Seeder
 {
+    /** @var array<string, ArtefatoTipo> */
+    private array $artefatoTipos = [];
+
     public function run(): void
     {
+        $this->artefatoTipos = ArtefatoTipo::all()->keyBy('nome')->all();
+
         $bens = [
             // ── PUBLICADOS ───────────────────────────────────────────────────────
             [
@@ -192,6 +201,9 @@ class BemMaterialSeeder extends Seeder
         ];
 
         foreach ($bens as $dados) {
+            $bemExistente = BemMaterial::where('codigo_iphan', $dados['codigo_iphan'])->first();
+            $localizacao = $this->criarLocalizacao($dados, $bemExistente?->localizacao_id);
+
             $bem = BemMaterial::updateOrCreate(
                 ['codigo_iphan' => $dados['codigo_iphan']],
                 [
@@ -212,6 +224,7 @@ class BemMaterialSeeder extends Seeder
                     'geojson' => ['type' => 'Point', 'coordinates' => [$dados['longitude'], $dados['latitude']]],
                     'ano_registro' => $dados['ano_registro'],
                     'descricao_atualizacao' => $dados['descricao_atualizacao'],
+                    'localizacao_id' => $localizacao->id,
                 ]
             );
 
@@ -221,9 +234,10 @@ class BemMaterialSeeder extends Seeder
                 [$bem->longitude, $bem->latitude, $bem->id]
             );
 
-            // Remove mídias e responsáveis existentes antes de recriar (idempotência).
+            // Remove mídias, responsáveis e artefato_tipos existentes antes de recriar (idempotência).
             $bem->midias()->delete();
             $bem->responsaveis()->delete();
+            $bem->artefatoTipos()->delete();
 
             foreach ($dados['midias'] as $midia) {
                 Midia::create([
@@ -246,9 +260,56 @@ class BemMaterialSeeder extends Seeder
                 ['bem_material_id' => $bem->id, 'user_id' => $usuario->id],
                 ['papel' => PapelResponsavelBem::PESQUISADOR]
             );
+
+            $this->vincularArtefatoTipos($bem, $dados['artefatos']);
         }
 
         $this->command->info('BemMaterialSeeder: 6 sítios do Piauí criados (3 publicados, 3 não publicados).');
+    }
+
+    /** @param array<string, mixed> $dados */
+    private function criarLocalizacao(array $dados, ?string $localizacaoId = null): Localizacao
+    {
+        $localizacaoData = [
+            'uf' => $dados['uf'] ?? null,
+            'municipio' => $dados['municipio'] ?? null,
+            'cep' => $dados['cep'] ?? null,
+            'logradouro' => $dados['endereco'] ?? null,
+        ];
+
+        if ($localizacaoId && $localizacao = Localizacao::find($localizacaoId)) {
+            $localizacao->update($localizacaoData);
+        } else {
+            $localizacao = Localizacao::create($localizacaoData);
+        }
+
+        DB::statement(
+            'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+            [$dados['longitude'], $dados['latitude'], $localizacao->id]
+        );
+
+        return $localizacao;
+    }
+
+    /** @param string[] $artefatos */
+    private function vincularArtefatoTipos(BemMaterial $bem, array $artefatos): void
+    {
+        foreach ($artefatos as $valor) {
+            try {
+                $nome = ArtefatoBem::from($valor)->label();
+            } catch (\ValueError) {
+                continue;
+            }
+
+            $tipo = $this->artefatoTipos[$nome] ?? null;
+
+            if ($tipo) {
+                BemArtefatoTipo::firstOrCreate([
+                    'bem_material_id' => $bem->id,
+                    'artefato_tipo_id' => $tipo->id,
+                ]);
+            }
+        }
     }
 
     private function mimeParaTipo(string $tipo): string
