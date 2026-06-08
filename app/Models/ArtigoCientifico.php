@@ -20,7 +20,6 @@ class ArtigoCientifico extends Model
         'titulo',
         'doi',
         'link_acesso',
-        'autores',
         'ano_publicacao',
         'periodico',
         'idioma',
