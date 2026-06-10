@@ -17,10 +17,17 @@ class ArtigoBemMaterialControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $curador;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->curador = User::factory()->create(['ativo' => true, 'perfil' => PerfilUsuario::CURADOR]);
+    }
+
     public function test_curador_pode_remover_vinculo_e_gera_auditoria_com_autores(): void
     {
-        $curador = User::factory()->create(['ativo' => true, 'perfil' => PerfilUsuario::CURADOR]);
-
         $artigo = ArtigoCientifico::factory()->create();
         ArtigoAutor::factory()->count(2)->sequence(
             ['nome_autor' => 'Pessis, A.-M.', 'ordem' => 0],
@@ -36,7 +43,7 @@ class ArtigoBemMaterialControllerTest extends TestCase
             'trecho_relevante' => 'Trecho de teste.',
         ]);
 
-        $this->actingAs($curador)
+        $this->actingAs($this->curador)
             ->deleteJson("/api/v1/admin/artigos-bem-material/{$vinculo->id}")
             ->assertStatus(204);
 
