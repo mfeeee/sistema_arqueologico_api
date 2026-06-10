@@ -4,7 +4,7 @@
 
 **Backend central do ecossistema de coleta e gestão de dados arqueológicos**
 
-[![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
+[![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=flat-square&logo=php&logoColor=white)](https://www.php.net/)
 [![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20?style=flat-square&logo=laravel&logoColor=white)](https://laravel.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20+%20PostGIS-336791?style=flat-square&logo=postgresql&logoColor=white)](https://postgis.net/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
@@ -48,7 +48,7 @@ Endpoint dedicado (`POST /api/sync`) para recepção de lotes de dados enviados 
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | Laravel 13 · PHP 8.3 |
+| Backend | Laravel 13 · PHP 8.4 |
 | Autenticação | Laravel Fortify · Laravel Sanctum (tokens API + 2FA) |
 | Banco de Dados | PostgreSQL 16 com extensão PostGIS 3.4 |
 | Cache / Filas | Redis 7.2 |
@@ -431,6 +431,9 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 
 | Método | Endpoint | Descrição |
 |---|---|---|
+| `GET` | `/api/v1/admin/artigos-cientificos` | Lista todos os artigos com contagem de vínculos e autores |
+| `GET` | `/api/v1/admin/artigos-cientificos/{id}` | Detalha um artigo com vínculos e bens materiais associados |
+| `DELETE` | `/api/v1/admin/artigos-cientificos/{id}` | Exclui o artigo e todos os seus vínculos, registrando auditoria de Exclusão |
 | `DELETE` | `/api/v1/admin/artigos-bem-material/{id}` | Remove o vínculo entre um artigo e um bem material (sem excluir o artigo) |
 
 #### Curadorias
@@ -484,6 +487,9 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 |---|---|---|
 | `GET` | `/api/v1/admin/auditorias` | Lista registros de auditoria (paginado, 50/página) |
 | `GET` | `/api/v1/admin/auditorias/{id}` | Detalha um registro de auditoria específico |
+| `POST` | `/api/v1/admin/auditorias/{id}/restaurar` | Reverte a operação registrada: inserção → soft delete do bem; alteração → restaura campos anteriores |
+
+> **Restrições de `restaurar`:** disponível apenas para auditorias do tipo `BemMaterial` com operação `Inserção` ou `Alteração`. Operações de `Exclusão` e entidades de outros tipos retornam `422`. Se o bem não existir (nem como soft-deleted), retorna `404`. Ao restaurar coordenadas geográficas, o campo `geom` PostGIS é atualizado automaticamente.
 
 **Query params — `GET /api/v1/admin/auditorias`**
 
@@ -590,7 +596,7 @@ docker compose exec app php artisan test --compact tests/Feature/Coleta/
 docker compose exec app php artisan test --compact --filter=testNomeDoTeste
 ```
 
-Os testes cobrem os módulos de Coleta, Curadoria, Auditoria e Bens Materiais, incluindo os fluxos de autenticação e sincronização.
+Os testes cobrem autenticação, perfil de usuário, bens materiais, coletas, curadorias, artigos científicos, auditorias (incluindo reversão de operações), notificações, sincronização e internacionalização. São Feature Tests com banco PostgreSQL real e PostGIS — sem mocks. Total: ~199 testes.
 
 ---
 
