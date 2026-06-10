@@ -27,7 +27,8 @@ class StoreSubmissaoArtigoRequest extends FormRequest
             'doi' => ['nullable', 'string', 'max:255'],
             // Obrigatórios apenas quando o artigo ainda não existe no sistema
             'titulo' => [Rule::requiredIf(! $artigoExistente), 'nullable', 'string', 'max:500'],
-            'autores' => [Rule::requiredIf(! $artigoExistente), 'nullable', 'string', 'max:500'],
+            'autores' => [Rule::requiredIf(! $artigoExistente), 'nullable', 'array'],
+            'autores.*' => ['string', 'max:255'],
             'ano_publicacao' => ['nullable', 'integer', 'min:1800', 'max:2100'],
             'periodico' => ['nullable', 'string', 'max:255'],
             'idioma' => ['nullable', 'string', 'max:10'],
