@@ -252,22 +252,27 @@ class CuradoriaController extends Controller
 
         if ($request->acao_resultante === AcaoResultanteCuradoria::APROVAR->value) {
             if ($submissao->artigo_id) {
-                // Cenário A: artigo já existe, cria só o vínculo
-                $vinculo = ArtigoBemMaterial::create([
-                    'artigo_id' => $submissao->artigo_id,
-                    'bem_material_id' => $submissao->bem_material_id,
-                    'tipo_mencao' => $submissao->tipo_mencao,
-                    'trecho_relevante' => $submissao->trecho_relevante,
-                ]);
+                // Cenário A: artigo já existe — cria o vínculo ou atualiza se já existir.
+                $vinculo = ArtigoBemMaterial::updateOrCreate(
+                    [
+                        'artigo_id' => $submissao->artigo_id,
+                        'bem_material_id' => $submissao->bem_material_id,
+                    ],
+                    [
+                        'tipo_mencao' => $submissao->tipo_mencao,
+                        'trecho_relevante' => $submissao->trecho_relevante,
+                    ]
+                );
 
                 $artigo = $vinculo->artigo;
+                $operacao = $vinculo->wasRecentlyCreated ? 'Inserção' : 'Atualização';
 
                 Auditoria::create([
                     'usuario_id' => $request->user()->id,
                     'entidade_tipo' => ArtigoBemMaterial::class,
                     'entidade_id' => $vinculo->id,
                     'curadoria_id' => $curadoria->id,
-                    'operacao' => 'Inserção',
+                    'operacao' => $operacao,
                     'meio' => 'Curadoria',
                     'data_hora' => now(),
                     'valor_anterior' => null,

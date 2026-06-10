@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\ArtigoBemMaterialController;
+use App\Http\Controllers\Admin\ArtigoCientificoController as AdminArtigoCientificoController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
 use App\Http\Controllers\Admin\CuradoriaController;
@@ -90,6 +91,12 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);
     Route::get('auditorias/{auditoria}', [AuditoriaController::class, 'show']);
+    Route::post('auditorias/{auditoria}/restaurar', [AuditoriaController::class, 'restaurar']);
+
+    // Artigos científicos (admin)
+    Route::get('artigos-cientificos', [AdminArtigoCientificoController::class, 'index']);
+    Route::get('artigos-cientificos/{artigo}', [AdminArtigoCientificoController::class, 'show']);
+    Route::delete('artigos-cientificos/{artigo}', [AdminArtigoCientificoController::class, 'destroy']);
 
     // Artigos — remoção de vínculo com bem material
     Route::delete('artigos-bem-material/{artigoBemMaterial}', [ArtigoBemMaterialController::class, 'destroy']);
