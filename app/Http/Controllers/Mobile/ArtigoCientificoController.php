@@ -37,7 +37,7 @@ class ArtigoCientificoController extends Controller
      * Lista os artigos aprovados vinculados a um bem material.
      * GET /mobile/bens-materiais/{bemMaterial}/artigos
      */
-    public function porBemMaterial(Request $request, string $bemMaterialId): JsonResponse
+    public function porBemMaterial(string $bemMaterialId): JsonResponse
     {
         $bemMaterial = BemMaterial::findOrFail($bemMaterialId);
 
