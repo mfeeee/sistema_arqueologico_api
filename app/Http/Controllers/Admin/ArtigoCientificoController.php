@@ -54,7 +54,7 @@ class ArtigoCientificoController extends Controller
             'id' => $artigo->id,
             'titulo' => $artigo->titulo,
             'doi' => $artigo->doi,
-            'autores' => $artigo->autores->pluck('nome_autor')->all(),
+            'autores' => $artigo->autores()->pluck('nome_autor')->all(),
             'ano_publicacao' => $artigo->ano_publicacao,
             'periodico' => $artigo->periodico,
             'total_vinculos_removidos' => $totalVinculos,
