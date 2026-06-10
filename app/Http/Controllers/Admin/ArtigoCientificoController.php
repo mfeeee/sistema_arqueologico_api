@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ArtigoBemMaterial;
 use App\Models\ArtigoCientifico;
 use App\Models\Auditoria;
 use Illuminate\Http\JsonResponse;
