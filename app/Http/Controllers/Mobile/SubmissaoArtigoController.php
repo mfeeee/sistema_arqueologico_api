@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SubmissaoArtigo\StoreSubmissaoArtigoRequest;
 use App\Models\Curadoria;
 use App\Models\SubmissaoArtigo;
+use App\Models\SubmissaoAutor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -24,7 +25,6 @@ class SubmissaoArtigoController extends Controller
                 'artigo_id' => $request->artigo_id,
                 'doi' => $request->doi,
                 'titulo' => $request->titulo,
-                'autores' => $request->autores,
                 'ano_publicacao' => $request->ano_publicacao,
                 'periodico' => $request->periodico,
                 'idioma' => $request->input('idioma', 'pt'),
@@ -34,6 +34,14 @@ class SubmissaoArtigoController extends Controller
                 'trecho_relevante' => $request->trecho_relevante,
                 'status' => 'pendente',
             ]);
+
+            foreach ($request->input('autores', []) as $ordem => $nomeAutor) {
+                SubmissaoAutor::create([
+                    'submissao_id' => $submissao->id,
+                    'nome_autor' => $nomeAutor,
+                    'ordem' => $ordem,
+                ]);
+            }
 
             Curadoria::create([
                 'entidade_tipo' => 'submissao_artigo',
@@ -46,6 +54,6 @@ class SubmissaoArtigoController extends Controller
             return $submissao;
         });
 
-        return response()->json($submissao->load(['bemMaterial', 'artigo']), 201);
+        return response()->json($submissao->load(['bemMaterial', 'artigo.autores', 'autores']), 201);
     }
 }

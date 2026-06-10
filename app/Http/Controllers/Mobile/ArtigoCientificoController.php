@@ -19,13 +19,18 @@ class ArtigoCientificoController extends Controller
     {
         $request->validate(['doi' => ['required', 'string']]);
 
-        $artigo = ArtigoCientifico::where('doi', $request->doi)->first();
+        $artigo = ArtigoCientifico::with('autores')->where('doi', $request->doi)->first();
 
         if (! $artigo) {
             return response()->json(['artigo' => null]);
         }
 
-        return response()->json(['artigo' => $artigo]);
+        return response()->json([
+            'artigo' => [
+                ...$artigo->toArray(),
+                'autores' => $artigo->autores->pluck('nome_autor')->all(),
+            ],
+        ]);
     }
 
     /**
@@ -38,7 +43,7 @@ class ArtigoCientificoController extends Controller
 
         $this->authorize('view', $bemMaterial);
 
-        $vinculos = ArtigoBemMaterial::with('artigo')
+        $vinculos = ArtigoBemMaterial::with('artigo.autores')
             ->where('bem_material_id', $bemMaterial->id)
             ->orderByDesc('created_at')
             ->get();
@@ -47,7 +52,7 @@ class ArtigoCientificoController extends Controller
             'id' => $v->artigo->id,
             'vinculo_id' => $v->id,
             'titulo' => $v->artigo->titulo,
-            'autores' => $v->artigo->autores,
+            'autores' => $v->artigo->autores->pluck('nome_autor')->all(),
             'ano_publicacao' => $v->artigo->ano_publicacao,
             'periodico' => $v->artigo->periodico,
             'doi' => $v->artigo->doi,

@@ -6,6 +6,7 @@ use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\StatusColeta;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Curadoria\AvaliarCuradoriaRequest;
+use App\Models\ArtigoAutor;
 use App\Models\ArtigoBemMaterial;
 use App\Models\ArtigoCientifico;
 use App\Models\Auditoria;
@@ -276,7 +277,7 @@ class CuradoriaController extends Controller
                         'tipo_mencao' => $submissao->tipo_mencao,
                         'trecho_relevante' => $submissao->trecho_relevante,
                         'artigo_titulo' => $artigo?->titulo,
-                        'artigo_autores' => $artigo?->autores,
+                        'artigo_autores' => $artigo?->autores->pluck('nome_autor')->all() ?? [],
                         'artigo_doi' => $artigo?->doi,
                         'artigo_periodico' => $artigo?->periodico,
                         'artigo_ano_publicacao' => $artigo?->ano_publicacao,
@@ -290,13 +291,20 @@ class CuradoriaController extends Controller
                     'titulo' => $submissao->titulo,
                     'doi' => $submissao->doi,
                     'link_acesso' => $submissao->link_acesso,
-                    'autores' => $submissao->autores,
                     'ano_publicacao' => $submissao->ano_publicacao,
                     'periodico' => $submissao->periodico,
                     'idioma' => $submissao->idioma ?? 'pt',
                     'resumo' => $submissao->resumo,
                     'verificado' => true,
                 ]);
+
+                foreach ($submissao->autores as $autor) {
+                    ArtigoAutor::create([
+                        'artigo_id' => $artigo->id,
+                        'nome_autor' => $autor->nome_autor,
+                        'ordem' => $autor->ordem,
+                    ]);
+                }
 
                 ArtigoBemMaterial::create([
                     'artigo_id' => $artigo->id,
@@ -320,7 +328,7 @@ class CuradoriaController extends Controller
                         'tipo_mencao' => $submissao->tipo_mencao,
                         'trecho_relevante' => $submissao->trecho_relevante,
                         'artigo_titulo' => $artigo->titulo,
-                        'artigo_autores' => $artigo->autores,
+                        'artigo_autores' => $artigo->autores->pluck('nome_autor')->all(),
                         'artigo_doi' => $artigo->doi,
                         'artigo_periodico' => $artigo->periodico,
                         'artigo_ano_publicacao' => $artigo->ano_publicacao,
