@@ -129,6 +129,56 @@ class AvaliacaoSubmissaoArtigoTest extends TestCase
         $this->assertSame(['Pessis, A.-M.', 'Guidon, N.'], $auditoria->valor_novo['artigo_autores']);
     }
 
+    public function test_aprovar_submissao_quando_vinculo_ja_existe_atualiza_em_vez_de_duplicar(): void
+    {
+        $artigo = ArtigoCientifico::factory()->create();
+        ArtigoAutor::factory()->create(['artigo_id' => $artigo->id, 'nome_autor' => 'Guidon, N.', 'ordem' => 0]);
+
+        $submissao = SubmissaoArtigo::factory()->create([
+            'artigo_id' => $artigo->id,
+            'tipo_mencao' => 'citacao',
+            'trecho_relevante' => 'Trecho original.',
+        ]);
+
+        // Vínculo já existe antes da aprovação
+        ArtigoBemMaterial::create([
+            'artigo_id' => $artigo->id,
+            'bem_material_id' => $submissao->bem_material_id,
+            'tipo_mencao' => 'citacao',
+            'trecho_relevante' => 'Trecho original.',
+        ]);
+
+        $curadoria = Curadoria::factory()->create([
+            'entidade_tipo' => 'submissao_artigo',
+            'entidade_id' => $submissao->id,
+            'bem_material_id' => $submissao->bem_material_id,
+            'usuario_id' => $this->curador->id,
+            'status' => StatusCuradoria::PENDENTE->value,
+        ]);
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::APROVAR->value,
+            ])
+            ->assertStatus(200);
+
+        // Deve existir exatamente um vínculo, não dois
+        $this->assertSame(
+            1,
+            ArtigoBemMaterial::where('artigo_id', $artigo->id)
+                ->where('bem_material_id', $submissao->bem_material_id)
+                ->count()
+        );
+
+        // Auditoria deve indicar 'Atualização', não 'Inserção'
+        $auditoria = Auditoria::where('entidade_tipo', ArtigoBemMaterial::class)
+            ->where('operacao', 'Atualização')
+            ->first();
+
+        $this->assertNotNull($auditoria, 'Esperava auditoria de Atualização');
+    }
+
     public function test_curador_rejeita_submissao_de_artigo(): void
     {
         $submissao = SubmissaoArtigo::factory()->create(['artigo_id' => null]);

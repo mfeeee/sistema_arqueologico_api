@@ -28,7 +28,7 @@ class ArtigoCientificoController extends Controller
         return response()->json([
             'artigo' => [
                 ...$artigo->toArray(),
-                'autores' => $artigo->autores->pluck('nome_autor')->all(),
+                'autores' => $artigo->autores()->pluck('nome_autor')->all(),
             ],
         ]);
     }
@@ -52,7 +52,7 @@ class ArtigoCientificoController extends Controller
             'id' => $v->artigo->id,
             'vinculo_id' => $v->id,
             'titulo' => $v->artigo->titulo,
-            'autores' => $v->artigo->autores->pluck('nome_autor')->all(),
+            'autores' => $v->artigo->autores()->pluck('nome_autor')->all(),
             'ano_publicacao' => $v->artigo->ano_publicacao,
             'periodico' => $v->artigo->periodico,
             'doi' => $v->artigo->doi,

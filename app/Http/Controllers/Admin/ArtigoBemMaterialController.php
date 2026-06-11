@@ -27,7 +27,7 @@ class ArtigoBemMaterialController extends Controller
             'tipo_mencao' => $artigoBemMaterial->tipo_mencao,
             'trecho_relevante' => $artigoBemMaterial->trecho_relevante,
             'artigo_titulo' => $artigo?->titulo,
-            'artigo_autores' => $artigo?->autores->pluck('nome_autor')->all() ?? [],
+            'artigo_autores' => $artigo?->autores()->pluck('nome_autor')->all() ?? [],
             'artigo_doi' => $artigo?->doi,
             'artigo_periodico' => $artigo?->periodico,
             'artigo_ano_publicacao' => $artigo?->ano_publicacao,
