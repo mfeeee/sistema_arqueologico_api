@@ -15,7 +15,6 @@ class ColetaController extends Controller
         $this->authorize('viewAny', Coleta::class);
 
         $coletas = Coleta::where('usuario_id', $request->user()->id)
-            ->whereNull('deletado_em')
             ->orderByDesc('data_coleta')
             ->paginate(20);
 
@@ -63,7 +62,7 @@ class ColetaController extends Controller
     {
         $this->authorize('delete', $coleta);
 
-        $coleta->update(['deletado_em' => now()]);
+        $coleta->delete();
 
         return response()->json(null, 204);
     }
