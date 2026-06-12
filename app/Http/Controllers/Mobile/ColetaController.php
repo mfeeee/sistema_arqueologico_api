@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Mobile;
 
+use App\Enums\ArtefatoBem;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Coleta\StoreColetaRequest;
+use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,10 +43,10 @@ class ColetaController extends Controller
         if (! empty($validated['artefatos'])) {
             foreach ($validated['artefatos'] as $valor) {
                 try {
-                    $enum = \App\Enums\ArtefatoBem::from($valor);
+                    $enum = ArtefatoBem::from($valor);
                     $nome = $enum->label();
-                    
-                    $tipo = \App\Models\ArtefatoTipo::where('nome', $nome)->first();
+
+                    $tipo = ArtefatoTipo::where('nome', $nome)->first();
                     if ($tipo) {
                         $coleta->artefatoTipos()->create([
                             'artefato_tipo_id' => $tipo->id,
