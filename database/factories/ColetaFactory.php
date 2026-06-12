@@ -6,6 +6,7 @@ use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\StatusColeta;
 use App\Enums\TipoBem;
+use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
 use App\Models\Localizacao;
 use App\Models\User;
@@ -62,10 +63,6 @@ class ColetaFactory extends Factory
             'natureza_bem' => NaturezaBem::ARQUEOLOGICO,
             'tipo_bem' => fake()->randomElement(TipoBem::cases()),
             'uf' => 'PI',
-            'artefatos' => fake()->randomElements(
-                array_column(ArtefatoBem::cases(), 'value'),
-                fake()->numberBetween(1, 3),
-            ),
             'status_sincronizacao' => StatusColeta::PENDENTE,
             'versao' => 1,
             'dados_coletados' => [
@@ -81,6 +78,22 @@ class ColetaFactory extends Factory
                 ],
             ],
         ];
+    }
+
+    public function comArtefatos(array $artefatos): static
+    {
+        return $this->afterCreating(function (Coleta $coleta) use ($artefatos) {
+            foreach ($artefatos as $valor) {
+                $tipo = ArtefatoTipo::where('nome', $valor)->first();
+                if (! $tipo) {
+                    $tipo = ArtefatoTipo::factory()->create(['nome' => $valor]);
+                }
+
+                $coleta->artefatoTipos()->create([
+                    'artefato_tipo_id' => $tipo->id,
+                ]);
+            }
+        });
     }
 
     public function pendente(): static
