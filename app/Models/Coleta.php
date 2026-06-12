@@ -12,10 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Coleta extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'coletas';
 
@@ -33,7 +34,6 @@ class Coleta extends Model
         'uf',
         'versao',
         'dados_coletados',
-        'deletado_em',
     ];
 
     protected $casts = [
@@ -46,7 +46,6 @@ class Coleta extends Model
         'status_sincronizacao' => StatusColeta::class,
         'versao' => 'integer',
         'dados_coletados' => 'array',
-        'deletado_em' => 'datetime',
     ];
 
     public function usuario(): BelongsTo
