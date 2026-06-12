@@ -80,7 +80,6 @@ class ColetaFactory extends Factory
                     'telefone' => '86'.fake()->numerify('#########'),
                 ],
             ],
-            'deletado_em' => null,
         ];
     }
 
