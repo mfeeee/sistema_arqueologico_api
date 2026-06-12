@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\TipoBem;
+use App\Models\ArtefatoTipo;
 use App\Models\BemMaterial;
 use App\Models\Localizacao;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -81,10 +82,6 @@ class BemMaterialFactory extends Factory
             'natureza' => NaturezaBem::ARQUEOLOGICO,
             'tipo' => TipoBem::SITIO,
             'meios_acesso' => 'Acesso por trilha de terra, '.fake()->numberBetween(5, 30).' km da sede municipal.',
-            'artefatos' => fake()->randomElements(
-                array_column(ArtefatoBem::cases(), 'value'),
-                fake()->numberBetween(1, 4),
-            ),
             'publicado' => false,
             'uf' => 'PI',
             'municipio' => $sitio['municipio'],
@@ -102,16 +99,15 @@ class BemMaterialFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function (BemMaterial $bem) {
-            if ($bem->latitude === null || $bem->longitude === null) {
-                return;
+            // 1. Atualiza geom
+            if ($bem->latitude !== null && $bem->longitude !== null) {
+                DB::statement(
+                    'UPDATE bens_materiais
+                     SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326)
+                     WHERE id = ?',
+                    [$bem->longitude, $bem->latitude, $bem->id]
+                );
             }
-
-            DB::statement(
-                'UPDATE bens_materiais
-                 SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326)
-                 WHERE id = ?',
-                [$bem->longitude, $bem->latitude, $bem->id]
-            );
         });
     }
 
@@ -142,7 +138,22 @@ class BemMaterialFactory extends Factory
 
     public function comArtefatos(array $artefatos): static
     {
-        return $this->state(fn () => ['artefatos' => $artefatos]);
+        return $this->afterCreating(function (BemMaterial $bem) use ($artefatos) {
+            // Remove existentes para este estado específico
+            $bem->artefatoTipos()->delete();
+
+            foreach ($artefatos as $valor) {
+                // Tenta encontrar pelo enum ou nome
+                $tipo = ArtefatoTipo::where('nome', $valor)->first();
+                if (! $tipo) {
+                    $tipo = ArtefatoTipo::factory()->create(['nome' => $valor]);
+                }
+
+                $bem->artefatoTipos()->create([
+                    'artefato_tipo_id' => $tipo->id,
+                ]);
+            }
+        });
     }
 
     public function localizadoEm(float $latitude, float $longitude): static
