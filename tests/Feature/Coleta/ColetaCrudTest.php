@@ -9,6 +9,7 @@ use App\Models\Coleta;
 use App\Models\ColetaArtefatoTipo;
 use App\Models\Localizacao;
 use App\Models\User;
+use Database\Seeders\ArtefatoTipoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,7 +23,7 @@ class ColetaCrudTest extends TestCase
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\ArtefatoTipoSeeder::class);
+        $this->seed(ArtefatoTipoSeeder::class);
 
         $this->coletor = User::factory()->create([
             'ativo' => true,
