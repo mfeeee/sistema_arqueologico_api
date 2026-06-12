@@ -68,11 +68,6 @@ class BemMaterial extends Model
         return $this->morphMany(Midia::class, 'mediable');
     }
 
-    public function responsavel(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'responsavel_id');
-    }
-
     public function curadorResponsavel(): BelongsTo
     {
         return $this->belongsTo(User::class, 'curador_responsavel_id');
