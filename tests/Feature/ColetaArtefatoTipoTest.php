@@ -76,7 +76,7 @@ class ColetaArtefatoTipoTest extends TestCase
         $vinculo = ColetaArtefatoTipo::factory()->create();
         $coletaId = $vinculo->coleta_id;
 
-        $vinculo->coleta->delete();
+        $vinculo->coleta->forceDelete();
 
         $this->assertDatabaseMissing('coleta_artefato_tipos', ['coleta_id' => $coletaId]);
     }
