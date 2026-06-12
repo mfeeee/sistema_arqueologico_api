@@ -14,7 +14,7 @@ class SubmissaoAutor extends Model
 
     protected $table = 'submissao_autores';
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = ['submissao_id', 'nome_autor', 'ordem'];
 

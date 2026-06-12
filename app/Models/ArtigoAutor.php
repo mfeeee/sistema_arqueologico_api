@@ -14,7 +14,7 @@ class ArtigoAutor extends Model
 
     protected $table = 'artigo_autores';
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = ['artigo_id', 'nome_autor', 'ordem'];
 

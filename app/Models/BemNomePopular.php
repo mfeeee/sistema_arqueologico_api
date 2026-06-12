@@ -14,7 +14,7 @@ class BemNomePopular extends Model
 
     protected $table = 'bem_nomes_populares';
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = ['bem_material_id', 'nome'];
 
