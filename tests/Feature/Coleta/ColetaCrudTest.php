@@ -22,6 +22,8 @@ class ColetaCrudTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(\Database\Seeders\ArtefatoTipoSeeder::class);
+
         $this->coletor = User::factory()->create([
             'ativo' => true,
             'perfil' => PerfilUsuario::COLETOR,
@@ -143,7 +145,7 @@ class ColetaCrudTest extends TestCase
 
         $coleta = Coleta::where('nome_bem', 'Sítio com Artefatos')->firstOrFail();
 
-        $this->assertSame($artefatos, $coleta->artefatos);
+        $this->assertCount(count($artefatos), $coleta->artefatoTipos);
     }
 
     public function test_coleta_com_artefato_tipos_vinculados_retorna_contagem_correta(): void
