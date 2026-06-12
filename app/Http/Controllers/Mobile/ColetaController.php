@@ -34,12 +34,29 @@ class ColetaController extends Controller
             'natureza_bem' => $validated['natureza'] ?? null,
             'tipo_bem' => $validated['tipo'] ?? null,
             'uf' => $validated['uf'] ?? null,
-            'artefatos' => $validated['artefatos'] ?? [],
             'versao' => $validated['versao'] ?? 1,
             'dados_coletados' => $validated['dados_coletados'] ?? [],
         ]);
 
-        return response()->json($coleta, 201);
+        if (! empty($validated['artefatos'])) {
+            foreach ($validated['artefatos'] as $valor) {
+                try {
+                    $enum = \App\Enums\ArtefatoBem::from($valor);
+                    $nome = $enum->label();
+                    
+                    $tipo = \App\Models\ArtefatoTipo::where('nome', $nome)->first();
+                    if ($tipo) {
+                        $coleta->artefatoTipos()->create([
+                            'artefato_tipo_id' => $tipo->id,
+                        ]);
+                    }
+                } catch (\ValueError $e) {
+                    // Ignora valores inválidos que passaram pela validação (improvável)
+                }
+            }
+        }
+
+        return response()->json($coleta->load('artefatoTipos.artefatoTipo'), 201);
     }
 
     public function show(Coleta $coleta): JsonResponse
