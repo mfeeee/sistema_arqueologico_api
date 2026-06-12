@@ -29,7 +29,6 @@ class BemMaterial extends Model
         'nomes_populares',
         'natureza',
         'tipo',
-        'artefatos',
         'meios_acesso',
         'publicado',
         'uf',
@@ -45,11 +44,9 @@ class BemMaterial extends Model
     ];
 
     protected $casts = [
-        'artefatos' => 'array',
         'geojson' => 'array',
         'natureza' => NaturezaBem::class,
         'tipo' => TipoBem::class,
-        'artefatos' => 'array',
         'publicado' => 'boolean',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
