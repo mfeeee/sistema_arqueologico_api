@@ -173,11 +173,14 @@ class ColetaCrudTest extends TestCase
     {
         $coleta = Coleta::factory()->create([
             'usuario_id' => $this->coletor->id,
-            'deletado_em' => now(),
         ]);
+
+        $coleta->delete();
 
         $this->actingAs($this->coletor)
             ->getJson('/api/v1/mobile/coletas')
             ->assertJsonMissing(['id' => $coleta->id]);
+
+        $this->assertSoftDeleted('coletas', ['id' => $coleta->id]);
     }
 }
