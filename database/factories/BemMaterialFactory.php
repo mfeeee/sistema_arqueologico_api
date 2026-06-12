@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\TipoBem;
 use App\Models\ArtefatoTipo;
