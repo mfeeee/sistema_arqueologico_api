@@ -43,7 +43,7 @@ class ShowTest extends TestCase
             ->assertJsonPath('localizacao_id', null)
             ->assertJsonStructure([
                 'midias',
-                'responsavel',
+                'responsaveis',
             ]);
     }
 
