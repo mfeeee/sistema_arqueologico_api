@@ -66,7 +66,7 @@ class ArtefatoTipoSeeder extends Seeder
                 ['id' => $mapping[$nome] ?? null],
                 [
                     'nome' => $nome,
-                    'descricao' => self::$descricoes[$nome] ?? null
+                    'descricao' => self::$descricoes[$nome] ?? null,
                 ],
             );
         }
