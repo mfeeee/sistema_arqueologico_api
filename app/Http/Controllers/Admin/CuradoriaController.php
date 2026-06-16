@@ -43,7 +43,11 @@ class CuradoriaController extends Controller
     {
         $this->authorize('view', $curadoria);
 
-        $curadoria->load(['bemMaterial.responsaveis.usuario', 'bemMaterial.curadorResponsavel', 'curador']);
+        $curadoria->load([
+            'bemMaterial.responsaveis.usuario',
+            'bemMaterial.curadorResponsavel',
+            'curador' => fn ($q) => $q->withTrashed(),
+        ]);
 
         return response()->json($this->carregarEntidade($curadoria));
     }
