@@ -64,7 +64,7 @@ Conforme LGPD art. 16 II (pesquisa científica), os seguintes dados são mantido
 
 Em todos esses registros, o `usuario_id` aponta para um registro anonimizado que exibe apenas `"Usuário excluído"`.
 
-### O que é removido automaticamente (cascade)
+### O que é removido durante a anonimização
 
 - Notificações (`notificacoes`)
 - Preferências de notificações (`preferencias_notificacoes`)
