@@ -205,6 +205,32 @@ class ColetaCrudTest extends TestCase
             ->assertJsonPath('data.localizacao.municipio', 'Piracuruca');
     }
 
+    public function test_coleta_retorna_lat_lng_no_json(): void
+    {
+        $lat = -3.9264;
+        $lng = -41.4683;
+
+        /** @var Localizacao $localizacao */
+        $localizacao = Localizacao::factory()->create();
+
+        DB::statement(
+            'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+            [$lng, $lat, $localizacao->id]
+        );
+
+        $coleta = Coleta::factory()->create([
+            'usuario_id' => $this->coletor->id,
+            'localizacao_id' => $localizacao->id,
+        ]);
+
+        $response = $this->actingAs($this->coletor)
+            ->getJson("/api/v1/mobile/coletas/{$coleta->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.localizacao.lat', $lat)
+            ->assertJsonPath('data.localizacao.lng', $lng);
+    }
+
     public function test_soft_delete_nao_retorna_coleta_deletada(): void
     {
         $coleta = Coleta::factory()->create([
