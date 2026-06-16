@@ -5,6 +5,11 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property-read string|null $url
+ * @property-read string $mediable_type
+ * @property-read string $mediable_id
+ */
 class MidiaResource extends JsonResource
 {
     /**
@@ -16,9 +21,12 @@ class MidiaResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'mediable_type' => $this->mediable_type,
+            'mediable_id' => $this->mediable_id,
             'tipo' => $this->tipo?->value,
             'storage_path' => $this->storage_path,
             'mime_type' => $this->mime_type,
+            'url' => $this->url,
             'descricao' => $this->descricao,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
