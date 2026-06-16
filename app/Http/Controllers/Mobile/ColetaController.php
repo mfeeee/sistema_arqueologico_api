@@ -9,6 +9,7 @@ use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ColetaController extends Controller
 {
@@ -17,7 +18,7 @@ class ColetaController extends Controller
         $this->authorize('viewAny', Coleta::class);
 
         $coletas = Coleta::where('usuario_id', $request->user()->id)
-            ->with('localizacao')
+            ->with(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
             ->orderByDesc('data_coleta')
             ->paginate(20);
 
@@ -27,6 +28,26 @@ class ColetaController extends Controller
     public function store(StoreColetaRequest $request): JsonResponse
     {
         $validated = $request->validated();
+
+        $localizacaoId = null;
+        $lat = $validated['latitude'] ?? null;
+        $lng = $validated['longitude'] ?? null;
+
+        if (!empty($validated['latitude']) && !empty($validated['longitude'])) {
+            $localizacao = \App\Models\Localizacao::create([
+                'cep'        => $validated['cep'] ?? null,
+                'logradouro' => $validated['logradouro'] ?? null,
+                'municipio'  => $validated['municipio'] ?? null,
+                'uf'         => $validated['uf'] ?? null,
+            ]);
+
+            DB::statement(
+                'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                [$lng, $lat, $localizacao->id]
+            );
+            
+            $localizacaoId = $localizacao->id;
+        }
 
         $coleta = Coleta::create([
             'usuario_id' => $request->user()->id,
@@ -39,6 +60,7 @@ class ColetaController extends Controller
             'uf' => $validated['uf'] ?? null,
             'versao' => $validated['versao'] ?? 1,
             'dados_coletados' => $validated['dados_coletados'] ?? [],
+            'localizacao_id' => $localizacaoId,
         ]);
 
         if (! empty($validated['artefatos'])) {
@@ -59,14 +81,18 @@ class ColetaController extends Controller
             }
         }
 
-        return response()->json($coleta->load('artefatoTipos.artefatoTipo'), 201);
+        return response()->json(
+            $coleta->load(['artefatoTipos.artefatoTipo', 'localizacao']), 201
+        );
     }
 
     public function show(Coleta $coleta): JsonResponse
     {
         $this->authorize('view', $coleta);
 
-        return response()->json($coleta->load('localizacao'));
+        return response()->json(
+            $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
+        );
     }
 
     public function update(StoreColetaRequest $request, Coleta $coleta): JsonResponse
