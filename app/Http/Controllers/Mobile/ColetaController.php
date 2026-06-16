@@ -17,6 +17,7 @@ class ColetaController extends Controller
         $this->authorize('viewAny', Coleta::class);
 
         $coletas = Coleta::where('usuario_id', $request->user()->id)
+            ->with('localizacao')
             ->orderByDesc('data_coleta')
             ->paginate(20);
 
@@ -65,7 +66,7 @@ class ColetaController extends Controller
     {
         $this->authorize('view', $coleta);
 
-        return response()->json($coleta);
+        return response()->json($coleta->load('localizacao'));
     }
 
     public function update(StoreColetaRequest $request, Coleta $coleta): JsonResponse
