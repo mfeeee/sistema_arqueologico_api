@@ -35,15 +35,17 @@ class ShowTest extends TestCase
             ->getJson('/api/v1/mobile/bens-materiais/'.$bem->id);
 
         $response->assertOk()
-            ->assertJsonPath('id', $bem->id)
-            ->assertJsonPath('nome_bem', 'Sítio do exemplo')
-            ->assertJsonPath('uf', 'PI')
-            ->assertJsonPath('municipio', 'Teresina')
-            ->assertJsonPath('publicado', true)
-            ->assertJsonPath('localizacao_id', null)
+            ->assertJsonPath('data.id', $bem->id)
+            ->assertJsonPath('data.nome_bem', 'Sítio do exemplo')
+            ->assertJsonPath('data.uf', 'PI')
+            ->assertJsonPath('data.municipio', 'Teresina')
+            ->assertJsonPath('data.publicado', true)
+            ->assertJsonPath('data.localizacao_id', null)
             ->assertJsonStructure([
-                'midias',
-                'responsaveis',
+                'data' => [
+                    'midias',
+                    'responsaveis',
+                ],
             ]);
     }
 
@@ -61,7 +63,7 @@ class ShowTest extends TestCase
         $this->actingAs($this->user)
             ->getJson('/api/v1/mobile/bens-materiais/'.$bem->id)
             ->assertOk()
-            ->assertJsonPath('localizacao_id', $localizacao->id);
+            ->assertJsonPath('data.localizacao_id', $localizacao->id);
     }
 
     public function test_show_retorna_midias_vinculadas(): void
@@ -75,7 +77,7 @@ class ShowTest extends TestCase
         $this->actingAs($this->user)
             ->getJson('/api/v1/mobile/bens-materiais/'.$bem->id)
             ->assertOk()
-            ->assertJsonCount(2, 'midias');
+            ->assertJsonCount(2, 'data.midias');
     }
 
     public function test_show_retorna_midias_vazia_quando_sem_midias(): void
@@ -85,6 +87,6 @@ class ShowTest extends TestCase
         $this->actingAs($this->user)
             ->getJson('/api/v1/mobile/bens-materiais/'.$bem->id)
             ->assertOk()
-            ->assertJsonPath('midias', []);
+            ->assertJsonPath('data.midias', []);
     }
 }

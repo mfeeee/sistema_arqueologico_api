@@ -48,7 +48,7 @@ class NearbyTest extends TestCase
             ->getJson('/api/v1/mobile/bens-materiais/nearby?latitude=-5.0892&longitude=-42.8016&raio_km=5');
 
         $response->assertStatus(200)
-            ->assertJsonCount(1)
+            ->assertJsonCount(1, 'data')
             ->assertJsonFragment(['id' => $bemProximo->id]);
     }
 
@@ -76,6 +76,6 @@ class NearbyTest extends TestCase
         $this->actingAs($this->user)
             ->getJson('/api/v1/mobile/bens-materiais/nearby?latitude=-5.0892&longitude=-42.8016&raio_km=5')
             ->assertStatus(200)
-            ->assertJsonCount(0);
+            ->assertJsonCount(0, 'data');
     }
 }
