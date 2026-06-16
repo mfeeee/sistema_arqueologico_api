@@ -2,8 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ArtefatoBem;
+use App\Models\ArtefatoTipo;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
+use App\Models\ColetaArtefatoTipo;
 use App\Models\Curadoria;
 use App\Models\Localizacao;
 use App\Models\User;
@@ -32,6 +35,9 @@ class CuradoriaAtualizacaoPendenteSeeder extends Seeder
 {
     private function criarColeta(array $dados): Coleta
     {
+        $artefatos = $dados['artefatos'] ?? [];
+        $coletaDados = array_diff_key($dados, array_flip(['municipio', 'artefatos']));
+
         $localizacao = Localizacao::create([
             'uf' => $dados['uf'] ?? null,
             'municipio' => $dados['municipio'] ?? null,
@@ -42,7 +48,24 @@ class CuradoriaAtualizacaoPendenteSeeder extends Seeder
             [$dados['longitude'], $dados['latitude'], $localizacao->id]
         );
 
-        return Coleta::create([...$dados, 'localizacao_id' => $localizacao->id]);
+        $coleta = Coleta::create([...$coletaDados, 'localizacao_id' => $localizacao->id]);
+
+        foreach ($artefatos as $valor) {
+            try {
+                $nome = ArtefatoBem::from($valor)->label();
+            } catch (\ValueError) {
+                continue;
+            }
+            $tipo = ArtefatoTipo::where('nome', $nome)->first();
+            if ($tipo) {
+                ColetaArtefatoTipo::firstOrCreate([
+                    'coleta_id' => $coleta->id,
+                    'artefato_tipo_id' => $tipo->id,
+                ]);
+            }
+        }
+
+        return $coleta;
     }
 
     public function run(): void

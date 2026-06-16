@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\ArtefatoBem;
 use App\Models\ArtefatoTipo;
 use App\Models\Auditoria;
+use App\Models\BemArtefatoTipo;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
 use App\Models\ColetaArtefatoTipo;
@@ -100,6 +101,27 @@ class ColetaECuradoriaSeeder extends Seeder
             if ($tipo) {
                 ColetaArtefatoTipo::firstOrCreate([
                     'coleta_id' => $coleta->id,
+                    'artefato_tipo_id' => $tipo->id,
+                ]);
+            }
+        }
+    }
+
+    /** @param string[] $artefatos Valores do enum ArtefatoBem (ex: 'litico', 'ceramica'). */
+    private function vincularArtefatoTiposBem(BemMaterial $bem, array $artefatos): void
+    {
+        foreach ($artefatos as $valor) {
+            try {
+                $nome = ArtefatoBem::from($valor)->label();
+            } catch (\ValueError) {
+                continue;
+            }
+
+            $tipo = $this->artefatoTipos[$nome] ?? null;
+
+            if ($tipo) {
+                BemArtefatoTipo::firstOrCreate([
+                    'bem_material_id' => $bem->id,
                     'artefato_tipo_id' => $tipo->id,
                 ]);
             }
@@ -291,7 +313,6 @@ class ColetaECuradoriaSeeder extends Seeder
                 'latitude' => $d['latitude'],
                 'longitude' => $d['longitude'],
                 'geojson' => ['type' => 'Point', 'coordinates' => [$d['longitude'], $d['latitude']]],
-                'artefatos' => $d['artefatos'],
                 'publicado' => false,
                 'ano_registro' => Carbon::now()->year,
                 'descricao_atualizacao' => 'Sítio criado via curadoria aprovada em '.Carbon::now()->subDays(10)->toDateString().'.',
@@ -302,6 +323,8 @@ class ColetaECuradoriaSeeder extends Seeder
                 'UPDATE bens_materiais SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
                 [$bem->longitude, $bem->latitude, $bem->id]
             );
+
+            $this->vincularArtefatoTiposBem($bem, $d['artefatos']);
 
             $bemNovos[] = $bem;
 
