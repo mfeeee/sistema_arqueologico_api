@@ -74,12 +74,12 @@ class ColetaCrudTest extends TestCase
 
     // ── localizacao_id ─────────────────────────────────────────────────────────
 
-    public function test_coleta_criada_via_api_nao_tem_localizacao_id(): void
+    public function test_coleta_criada_via_api_tem_localizacao_id_automaticamente(): void
     {
         $response = $this->actingAs($this->coletor)
             ->postJson('/api/v1/mobile/coletas', [
                 'data_coleta' => '2026-05-01 10:00:00',
-                'nome_bem' => 'Sítio Sem Localização',
+                'nome_bem' => 'Sítio Com Localização Automática',
                 'latitude' => -8.4823,
                 'longitude' => -42.6065,
                 'natureza' => NaturezaBem::ARQUEOLOGICO->value,
@@ -89,9 +89,11 @@ class ColetaCrudTest extends TestCase
         $response->assertStatus(201);
 
         $this->assertDatabaseHas('coletas', [
-            'nome_bem' => 'Sítio Sem Localização',
-            'localizacao_id' => null,
+            'nome_bem' => 'Sítio Com Localização Automática',
         ]);
+
+        $coleta = Coleta::where('nome_bem', 'Sítio Com Localização Automática')->first();
+        $this->assertNotNull($coleta->localizacao_id);
     }
 
     public function test_coleta_com_localizacao_persiste_e_carrega_relacao(): void
