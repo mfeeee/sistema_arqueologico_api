@@ -8,16 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('artigo_bem_material', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('artigo_id')->constrained('artigos_cientificos')->cascadeOnDelete();
-            $table->foreignUuid('bem_material_id')->constrained('bens_materiais')->cascadeOnDelete();
-            $table->string('tipo_mencao');
-            $table->text('trecho_relevante')->nullable();
-            $table->timestamps();
+        if (! Schema::hasTable('artigo_bem_material')) {
+            Schema::create('artigo_bem_material', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->foreignUuid('artigo_id')->constrained('artigos_cientificos')->cascadeOnDelete();
+                $table->foreignUuid('bem_material_id')->constrained('bens_materiais')->cascadeOnDelete();
+                $table->string('tipo_mencao');
+                $table->text('trecho_relevante')->nullable();
+                $table->timestamps();
 
-            $table->unique(['artigo_id', 'bem_material_id']);
-        });
+                $table->unique(['artigo_id', 'bem_material_id']);
+            });
+        }
     }
 
     public function down(): void
