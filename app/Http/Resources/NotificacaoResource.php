@@ -20,8 +20,8 @@ class NotificacaoResource extends JsonResource
             'corpo' => $this->corpo,
             'tipo' => $this->tipo->value,
             'lida' => $this->lida,
-            'lida_em'    => $this->lida_em?->toIso8601String(),
-            'created_at' => $this->created_at->toIso8601String(),
+            'lida_em' => $this->lida_em?->toIso8601String(),
+            'data'    => $this->created_at->toIso8601String(),
         ];
     }
 }
