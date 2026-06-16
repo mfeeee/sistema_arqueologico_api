@@ -15,23 +15,24 @@ class ColetaResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'uuid' => $this->id,
             'usuario_id' => $this->usuario_id,
-            'localizacao_id' => $this->localizacao_id,
-            'data_coleta' => $this->data_coleta,
+            'data_coleta' => $this->data_coleta?->toIso8601String(),
             'nome_bem' => $this->nome_bem,
-            'latitude' => (float) $this->latitude,
-            'longitude' => (float) $this->longitude,
-            'natureza_bem' => $this->natureza_bem,
-            'tipo_bem' => $this->tipo_bem,
+            'natureza' => $this->natureza_bem?->value,
+            'tipo' => $this->tipo_bem?->value,
             'uf' => $this->uf,
-            'versao' => (int) $this->versao,
+            'versao' => $this->versao,
             'dados_coletados' => $this->dados_coletados,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'localizacao' => new LocalizacaoResource($this->whenLoaded('localizacao')),
-            'artefato_tipos' => $this->whenLoaded('artefatoTipos'),
-            'midias' => $this->whenLoaded('midias'),
+            'status_sincronizacao' => $this->status_sincronizacao?->value,
+            'localizacao' => $this->whenLoaded('localizacao',
+                fn () => new LocalizacaoResource($this->localizacao)),
+            'artefato_tipos' => ArtefatoTipoResource::collection(
+                $this->whenLoaded('artefatoTipos')),
+            'midias' => MidiaResource::collection(
+                $this->whenLoaded('midias')),
+            'updated_at' => $this->updated_at?->toIso8601String(),
+            'deletado_em' => $this->deleted_at?->toIso8601String(),
         ];
     }
 }
