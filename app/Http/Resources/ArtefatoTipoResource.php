@@ -18,7 +18,7 @@ class ArtefatoTipoResource extends JsonResource
         if (isset($this->artefato_tipo_id)) {
             return [
                 'id' => $this->artefato_tipo_id,
-                'nome' => $this->artefatoTipo?->nome,
+                'nome' => $this->artefatoTipo?->nome ?? '',
                 'descricao_nova' => $this->descricao_nova,
                 'novo_tipo' => (bool) $this->novo_tipo,
             ];
