@@ -21,7 +21,7 @@ class MidiaResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'mediable_type' => $this->mediable_type,
+            'mediable_type' => strtolower(class_basename($this->mediable_type)),
             'mediable_id' => $this->mediable_id,
             'tipo' => $this->tipo?->value,
             'storage_path' => $this->storage_path,
