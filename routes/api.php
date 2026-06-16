@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ArtigoBemMaterialController;
 use App\Http\Controllers\Admin\ArtigoCientificoController as AdminArtigoCientificoController;
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\BemMaterialController as AdminBemMaterialController;
+use App\Http\Controllers\Admin\BemResponsavelController;
 use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -33,6 +34,7 @@ Route::prefix('auth')->group(function () {
         Route::patch('/me', [ProfileController::class, 'update']);
         Route::post('/me/avatar', [ProfileController::class, 'uploadAvatar']);
         Route::delete('/me/avatar', [ProfileController::class, 'deleteAvatar']);
+        Route::delete('/conta', [ProfileController::class, 'destroy']);
     });
 });
 
@@ -84,9 +86,13 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     Route::patch('bens-materiais/{bemMaterial}/publicar', [AdminBemMaterialController::class, 'publicar']);
     Route::patch('bens-materiais/{bemMaterial}/curador-responsavel', [AdminBemMaterialController::class, 'atualizarCuradorResponsavel']);
     Route::delete('bens-materiais/{bemMaterial}', [AdminBemMaterialController::class, 'destroy']);
+    Route::post('bens-materiais/{bemMaterial}/responsaveis', [BemResponsavelController::class, 'store']);
+    Route::delete('bens-materiais/{bemMaterial}/responsaveis/{bemResponsavel}', [BemResponsavelController::class, 'destroy']);
 
     // Usuários (admin)
+    Route::get('usuarios', [AdminUserController::class, 'index']);
     Route::get('usuarios/curadores', [AdminUserController::class, 'curadores']);
+    Route::patch('usuarios/{user}/perfil', [AdminUserController::class, 'updatePerfil']);
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);

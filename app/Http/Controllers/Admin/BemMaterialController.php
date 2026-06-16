@@ -48,7 +48,7 @@ class BemMaterialController extends Controller
             'valor_novo' => ['curador_responsavel' => $novoNome, 'curador_responsavel_id' => $novoId],
         ]);
 
-        return response()->json($bemMaterial->fresh(['midias', 'responsavel', 'curadorResponsavel']));
+        return response()->json($bemMaterial->fresh(['midias', 'responsaveis', 'curadorResponsavel']));
     }
 
     public function publicar(Request $request, BemMaterial $bemMaterial): JsonResponse
@@ -76,6 +76,6 @@ class BemMaterialController extends Controller
             'valor_novo' => ['publicado' => $novo],
         ]);
 
-        return response()->json($bemMaterial->fresh(['midias', 'responsavel']));
+        return response()->json($bemMaterial->fresh(['midias', 'responsaveis']));
     }
 }
