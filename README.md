@@ -176,18 +176,22 @@ Todos os endpoints protegidos exigem o header:
 Authorization: Bearer {token}
 ```
 
-### Auth (pública)
+### Auth (pública / protegida)
 
 | Método | Endpoint | Autenticação | Descrição |
 |---|---|---|---|
-| `POST` | `/api/v1/auth/login` | — | Login e emissão de token Sanctum |
-| `POST` | `/api/v1/auth/register` | — | Cadastro de novo usuário |
-| `POST` | `/api/v1/auth/password-reset` | — | Solicita e-mail de recuperação de senha |
-| `POST` | `/api/v1/auth/password-reset/confirm` | — | Confirma o reset com o token recebido por e-mail |
-| `POST` | `/api/v1/auth/logout` | `auth:sanctum` | Revoga o token atual |
-| `GET` | `/api/v1/auth/me` | `auth:sanctum` | Retorna dados do usuário autenticado |
+| `POST` | `/api/auth/login` | — | Login e emissão de token Sanctum |
+| `POST` | `/api/auth/register` | — | Cadastro de novo usuário |
+| `POST` | `/api/auth/password-reset` | — | Solicita e-mail de recuperação de senha |
+| `POST` | `/api/auth/password-reset/confirm` | — | Confirma o reset com o token recebido por e-mail |
+| `POST` | `/api/auth/logout` | `auth:sanctum` | Revoga o token atual |
+| `GET` | `/api/auth/me` | `auth:sanctum` | Retorna dados do usuário autenticado |
+| `PATCH` | `/api/auth/me` | `auth:sanctum` | Atualiza nome, e-mail ou senha do usuário |
+| `POST` | `/api/auth/me/avatar` | `auth:sanctum` | Faz upload de foto de perfil (S3) |
+| `DELETE` | `/api/auth/me/avatar` | `auth:sanctum` | Remove foto de perfil |
+| `DELETE` | `/api/auth/conta` | `auth:sanctum` | Anonimiza e exclui a própria conta (LGPD art. 18) |
 
-**Body — `POST /api/v1/auth/login`**
+**Body — `POST /api/auth/login`**
 
 ```json
 {
@@ -415,9 +419,13 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 
 | Método | Endpoint | Descrição |
 |---|---|---|
+| `GET` | `/api/v1/admin/usuarios` | Lista todos os usuários (apenas `admin`; paginado, 20/página) com filtros opcionais `q` (nome ou e-mail) e `perfil` |
 | `GET` | `/api/v1/admin/usuarios/curadores` | Lista usuários com perfil `curador` ou `admin` ativos (para seleção de responsável) |
+| `PATCH` | `/api/v1/admin/usuarios/{id}/perfil` | Altera o perfil de um usuário (apenas `admin`) e registra auditoria com id/nome/e-mail do afetado |
 
-**Resposta `200 OK`:**
+> Um usuário não pode alterar o próprio perfil. Perfil `admin` não pode ser alterado.
+
+**Resposta `200 OK` — `GET /api/v1/admin/usuarios/curadores`:**
 
 ```json
 {
@@ -503,6 +511,8 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 
 - **Inserção** (`criarSitio`): `valor_anterior = null`, `valor_novo` = snapshot completo do bem criado.
 - **Alteração** (`atualizarSitio`): `valor_anterior` = snapshot completo do bem antes da mudança, `valor_novo` = apenas os campos que foram efetivamente alterados.
+- **Alteração de perfil de usuário**: `valor_anterior` = `{id, nome, email, perfil}`, `valor_novo` = `{perfil: novo_perfil}`.
+- **Anonimização** (LGPD): `valor_anterior = null`, `valor_novo` = `{motivo: "Exclusão de conta solicitada pelo titular (LGPD art. 18)"}`.
 
 ***
 
@@ -596,7 +606,17 @@ docker compose exec app php artisan test --compact tests/Feature/Coleta/
 docker compose exec app php artisan test --compact --filter=testNomeDoTeste
 ```
 
-Os testes cobrem autenticação, perfil de usuário, bens materiais, coletas, curadorias, artigos científicos, auditorias (incluindo reversão de operações), notificações, sincronização e internacionalização. São Feature Tests com banco PostgreSQL real e PostGIS — sem mocks. Total: ~199 testes.
+Os testes cobrem autenticação, perfil de usuário (incluindo anonimização LGPD), bens materiais, coletas, curadorias, artigos científicos, auditorias (incluindo reversão de operações), notificações, sincronização e internacionalização. São Feature Tests com banco PostgreSQL real e PostGIS — sem mocks. Total: ~203 testes.
+
+---
+
+## Conformidade com a LGPD
+
+A API implementa o direito de exclusão previsto na LGPD (Lei nº 13.709/2018, art. 18 VI). O titular pode solicitar a remoção dos próprios dados pessoais via `DELETE /api/auth/conta`.
+
+A exclusão é realizada por **anonimização in-place** (`AnonimizarUsuarioAction`): os campos pessoais são sobrescritos por valores neutros e o registro recebe soft-delete, preservando a integridade referencial das contribuições científicas (coletas, curadorias, artigos) conforme LGPD art. 16 II (pesquisa científica).
+
+Detalhes completos — fundamento legal, campos tratados, fluxo técnico e o que é retido ou removido — estão documentados em [`LGPD.md`](LGPD.md).
 
 ---
 
