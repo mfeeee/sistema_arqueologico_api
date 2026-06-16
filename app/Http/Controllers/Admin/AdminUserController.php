@@ -81,7 +81,7 @@ class AdminUserController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'perfil' => $user->perfil,
+            'perfil' => $user->perfil->value,
             'classificacao' => $user->classificacao,
             'ativo' => $user->ativo,
         ]);
