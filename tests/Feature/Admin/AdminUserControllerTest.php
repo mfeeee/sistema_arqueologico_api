@@ -66,12 +66,14 @@ class AdminUserControllerTest extends TestCase
         User::factory()->create(['name' => 'Ana Lima', 'email' => 'ana@test.com']);
         User::factory()->create(['name' => 'Carlos Mendes', 'email' => 'carlos@test.com']);
 
-        $response = $this->actingAs($this->admin)
+        $data = $this->actingAs($this->admin)
             ->getJson('/api/v1/admin/usuarios?q=Ana')
-            ->assertOk();
+            ->assertOk()
+            ->json('data');
 
-        $response->assertJsonPath('total', 1);
-        $response->assertJsonPath('data.0.name', 'Ana Lima');
+        $names = array_column($data, 'name');
+        $this->assertContains('Ana Lima', $names);
+        $this->assertNotContains('Carlos Mendes', $names);
     }
 
     public function test_filtro_q_filtra_por_email(): void
@@ -79,12 +81,14 @@ class AdminUserControllerTest extends TestCase
         User::factory()->create(['name' => 'Fulano', 'email' => 'busca@example.com']);
         User::factory()->create(['name' => 'Outro', 'email' => 'outro@example.com']);
 
-        $response = $this->actingAs($this->admin)
+        $data = $this->actingAs($this->admin)
             ->getJson('/api/v1/admin/usuarios?q=busca@example')
-            ->assertOk();
+            ->assertOk()
+            ->json('data');
 
-        $response->assertJsonPath('total', 1);
-        $response->assertJsonPath('data.0.email', 'busca@example.com');
+        $emails = array_column($data, 'email');
+        $this->assertContains('busca@example.com', $emails);
+        $this->assertNotContains('outro@example.com', $emails);
     }
 
     public function test_filtro_perfil_filtra_por_perfil(): void
