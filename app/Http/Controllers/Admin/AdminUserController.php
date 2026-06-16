@@ -8,6 +8,7 @@ use App\Models\Auditoria;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Enum;
 
 class AdminUserController extends Controller
@@ -20,8 +21,10 @@ class AdminUserController extends Controller
             $q = $request->string('q')->trim()->toString();
             $query->where(function ($qb) use ($q) {
                 $qb->where('name', 'ilike', "%{$q}%")
-                    ->orWhere('email', 'ilike', "%{$q}%")
-                    ->orWhere('id', $q);
+                    ->orWhere('email', 'ilike', "%{$q}%");
+                if (Str::isUuid($q)) {
+                    $qb->orWhere('id', $q);
+                }
             });
         }
 
