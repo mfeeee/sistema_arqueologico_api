@@ -32,12 +32,14 @@ class Midia extends Model
 
     public function getUrlAttribute(): ?string
     {
-        if (! $this->storage_path) return null;
+        if (! $this->storage_path) {
+            return null;
+        }
 
         return $this->storage_disk === 'external'
             ? $this->storage_path
             : Storage::disk($this->storage_disk ?? 'public')
-                     ->url($this->storage_path);
+                ->url($this->storage_path);
     }
 
     public function mediable(): MorphTo
