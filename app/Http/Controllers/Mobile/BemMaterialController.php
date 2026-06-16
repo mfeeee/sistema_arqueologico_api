@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\BemMaterialResource;
 use App\Models\BemMaterial;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class BemMaterialController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|Responsable
     {
         $query = BemMaterial::query()
             ->with(['midias', 'responsaveis', 'curadorResponsavel', 'artefatoTipos.artefatoTipo']);
@@ -34,10 +36,10 @@ class BemMaterialController extends Controller
             $query->where('tipo', $request->tipo);
         }
 
-        return response()->json($query->paginate(20));
+        return BemMaterialResource::collection($query->paginate(20));
     }
 
-    public function nearby(Request $request): JsonResponse
+    public function nearby(Request $request): JsonResponse|Responsable
     {
         $request->validate([
             'latitude' => ['required', 'numeric', 'between:-90,90'],
@@ -67,10 +69,10 @@ class BemMaterialController extends Controller
             ->limit(50)
             ->get();
 
-        return response()->json($bens);
+        return BemMaterialResource::collection($bens);
     }
 
-    public function show(Request $request, BemMaterial $bemMaterial): JsonResponse
+    public function show(Request $request, BemMaterial $bemMaterial): JsonResponse|Responsable
     {
         $bemMaterialId = basename($request->path());
 
@@ -80,7 +82,7 @@ class BemMaterialController extends Controller
 
         $this->authorize('view', $bemMaterial);
 
-        return response()->json($bemMaterial);
+        return new BemMaterialResource($bemMaterial);
     }
 
     private function resolvePublicadoFilter(Request $request): array
