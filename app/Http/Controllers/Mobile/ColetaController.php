@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Coleta\StoreColetaRequest;
 use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
+use App\Models\Localizacao;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,19 +34,19 @@ class ColetaController extends Controller
         $lat = $validated['latitude'] ?? null;
         $lng = $validated['longitude'] ?? null;
 
-        if (!empty($validated['latitude']) && !empty($validated['longitude'])) {
-            $localizacao = \App\Models\Localizacao::create([
-                'cep'        => $validated['cep'] ?? null,
+        if (! empty($validated['latitude']) && ! empty($validated['longitude'])) {
+            $localizacao = Localizacao::create([
+                'cep' => $validated['cep'] ?? null,
                 'logradouro' => $validated['logradouro'] ?? null,
-                'municipio'  => $validated['municipio'] ?? null,
-                'uf'         => $validated['uf'] ?? null,
+                'municipio' => $validated['municipio'] ?? null,
+                'uf' => $validated['uf'] ?? null,
             ]);
 
             DB::statement(
                 'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
                 [$lng, $lat, $localizacao->id]
             );
-            
+
             $localizacaoId = $localizacao->id;
         }
 
@@ -107,8 +108,8 @@ class ColetaController extends Controller
             if ($coleta->localizacao_id) {
                 // Atualiza localização existente
                 $coleta->localizacao->update([
-                    'uf'         => $validated['uf'] ?? $coleta->localizacao->uf,
-                    'municipio'  => $validated['municipio'] ?? $coleta->localizacao->municipio,
+                    'uf' => $validated['uf'] ?? $coleta->localizacao->uf,
+                    'municipio' => $validated['municipio'] ?? $coleta->localizacao->municipio,
                 ]);
                 DB::statement(
                     'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
@@ -116,8 +117,8 @@ class ColetaController extends Controller
                 );
             } else {
                 // Cria nova localização e vincula
-                $localizacao = \App\Models\Localizacao::create([
-                    'uf'        => $validated['uf'] ?? null,
+                $localizacao = Localizacao::create([
+                    'uf' => $validated['uf'] ?? null,
                     'municipio' => $validated['municipio'] ?? null,
                 ]);
                 DB::statement(

@@ -14,7 +14,7 @@ return new class extends Migration
     {
         // Para cada coleta sem localizacao_id mas com lat/lng válidos,
         // cria uma Localizacao e faz o link
-        DB::statement("
+        DB::statement('
             INSERT INTO localizacoes (id, uf, geom, created_at, updated_at)
             SELECT
                 gen_random_uuid(),
@@ -26,10 +26,10 @@ return new class extends Migration
             WHERE localizacao_id IS NULL
             AND latitude <> 0
             AND longitude <> 0
-        ");
+        ');
 
         // Vincula cada coleta à localizacao recém-criada pelo geom
-        DB::statement("
+        DB::statement('
             UPDATE coletas c
             SET localizacao_id = l.id
             FROM localizacoes l
@@ -37,7 +37,7 @@ return new class extends Migration
             AND c.latitude <> 0
             AND c.longitude <> 0
             AND ST_Equals(l.geom, ST_SetSRID(ST_MakePoint(c.longitude, c.latitude), 4326))
-        ");
+        ');
     }
 
     /**
