@@ -5,10 +5,12 @@ namespace App\Jobs;
 use App\Enums\StatusColeta;
 use App\Exceptions\SincronizacaoException;
 use App\Models\Coleta;
+use App\Models\Localizacao;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProcessarSincronizacao implements ShouldQueue
 {
@@ -38,7 +40,6 @@ class ProcessarSincronizacao implements ShouldQueue
                     'usuario_id' => $this->usuarioId,
                     'error' => $e->getMessage(),
                 ]);
-
                 $this->marcarComoConflito($dados['id'] ?? null);
             }
         }
@@ -49,19 +50,53 @@ class ProcessarSincronizacao implements ShouldQueue
         $existente = Coleta::find($dados['id']);
 
         if ($existente && $existente->versao > $dados['versao']) {
-
             $existente->update(['status_sincronizacao' => StatusColeta::CONFLITO]);
             throw new SincronizacaoException(
                 "Conflito de versão na coleta {$dados['id']}: servidor={$existente->versao}, cliente={$dados['versao']}"
             );
         }
 
+        // Extrai lat/lng do payload (campo raiz ou objeto localizacao aninhado)
+        $locDados = $dados['localizacao'] ?? null;
+        $lat = $dados['latitude'] ?? ($locDados['geom']['lat'] ?? null);
+        $lng = $dados['longitude'] ?? ($locDados['geom']['lng'] ?? null);
+        $localizacaoId = $existente?->localizacao_id;
+
+        if ($lat !== null && $lng !== null) {
+            $loc = Localizacao::updateOrCreate(
+                ['id' => $locDados['id'] ?? Str::uuid()->toString()],
+                [
+                    'uf' => $locDados['uf'] ?? $dados['uf'] ?? null,
+                    'municipio' => $locDados['municipio'] ?? null,
+                    'cep' => $locDados['cep'] ?? null,
+                    'logradouro' => $locDados['logradouro'] ?? null,
+                ]
+            );
+
+            DB::statement(
+                'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+                [$lng, $lat, $loc->id]
+            );
+
+            $localizacaoId = $loc->id;
+        }
+
+        // Apenas campos escalares — sem objetos aninhados
         Coleta::updateOrCreate(
             ['id' => $dados['id']],
             [
-                ...$dados,
                 'usuario_id' => $this->usuarioId,
+                'nome_bem' => $dados['nome_bem'] ?? null,
+                'data_coleta' => $dados['data_coleta'] ?? null,
+                'natureza_bem' => $dados['natureza'] ?? null,
+                'tipo_bem' => $dados['tipo'] ?? null,
+                'uf' => $dados['uf'] ?? null,
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'versao' => $dados['versao'] ?? 1,
+                'dados_coletados' => $dados['dados_coletados'] ?? [],
                 'status_sincronizacao' => StatusColeta::SINCRONIZADO,
+                'localizacao_id' => $localizacaoId,
             ]
         );
     }
