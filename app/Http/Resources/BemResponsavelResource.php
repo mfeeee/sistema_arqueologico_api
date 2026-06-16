@@ -10,10 +10,10 @@ class BemResponsavelResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'papel' => $this->papel,
+            'papel' => $this->papel?->value,
             'user' => [
                 'id' => $this->usuario?->id,
-                'nome' => $this->usuario?->name,
+                'name' => $this->usuario?->name,
                 'email' => $this->usuario?->email,
                 'avatar_url' => $this->usuario?->avatar_url,
             ],
