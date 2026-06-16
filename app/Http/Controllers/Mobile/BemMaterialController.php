@@ -14,7 +14,7 @@ class BemMaterialController extends Controller
     public function index(Request $request): JsonResponse|Responsable
     {
         $query = BemMaterial::query()
-            ->with(['midias', 'responsaveis', 'curadorResponsavel', 'artefatoTipos.artefatoTipo']);
+            ->with(['midias', 'responsaveis.usuario', 'curadorResponsavel', 'artefatoTipos.artefatoTipo']);
 
         [$hasPublicadoFilter, $publicadoFilter] = $this->resolvePublicadoFilter($request);
 
@@ -65,7 +65,7 @@ class BemMaterialController extends Controller
             $bensQuery->where('publicado', true)->whereNull('deleted_at');
         }
 
-        $bens = $bensQuery->with(['midias', 'responsaveis', 'curadorResponsavel', 'artefatoTipos.artefatoTipo'])
+        $bens = $bensQuery->with(['midias', 'responsaveis.usuario', 'curadorResponsavel', 'artefatoTipos.artefatoTipo'])
             ->limit(50)
             ->get();
 
@@ -77,7 +77,7 @@ class BemMaterialController extends Controller
         $bemMaterialId = basename($request->path());
 
         $bemMaterial = BemMaterial::query()
-            ->with(['midias', 'responsaveis', 'curadorResponsavel', 'artefatoTipos.artefatoTipo'])
+            ->with(['midias', 'responsaveis.usuario', 'curadorResponsavel', 'artefatoTipos.artefatoTipo'])
             ->findOrFail($bemMaterialId);
 
         $this->authorize('view', $bemMaterial);
