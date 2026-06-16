@@ -11,10 +11,10 @@ class BemResponsavelResource extends JsonResource
     {
         return [
             'papel' => $this->papel,
-            'user'  => [
-                'id'         => $this->usuario?->id,
-                'nome'       => $this->usuario?->name,
-                'email'      => $this->usuario?->email,
+            'user' => [
+                'id' => $this->usuario?->id,
+                'nome' => $this->usuario?->name,
+                'email' => $this->usuario?->email,
                 'avatar_url' => $this->usuario?->avatar_url,
             ],
         ];
