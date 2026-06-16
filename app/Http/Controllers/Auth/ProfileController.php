@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\AnonimizarUsuarioAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Http\Requests\Profile\UploadAvatarRequest;
@@ -69,5 +70,12 @@ class ProfileController extends Controller
         $user->update(['avatar_url' => null]);
 
         return response()->json(['avatar_url' => null]);
+    }
+
+    public function destroy(Request $request): JsonResponse
+    {
+        (new AnonimizarUsuarioAction)->execute($request->user());
+
+        return response()->json(['message' => 'Conta excluída com sucesso.']);
     }
 }

@@ -213,7 +213,6 @@ class BemMaterialSeeder extends Seeder
                     'natureza' => $dados['natureza'],
                     'tipo' => $dados['tipo'],
                     'meios_acesso' => $dados['meios_acesso'],
-                    'artefatos' => $dados['artefatos'],
                     'publicado' => $dados['publicado'],
                     'uf' => $dados['uf'],
                     'municipio' => $dados['municipio'],
