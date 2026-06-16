@@ -511,7 +511,7 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 
 - **Inserção** (`criarSitio`): `valor_anterior = null`, `valor_novo` = snapshot completo do bem criado.
 - **Alteração** (`atualizarSitio`): `valor_anterior` = snapshot completo do bem antes da mudança, `valor_novo` = apenas os campos que foram efetivamente alterados.
-- **Alteração de perfil de usuário**: `valor_anterior` = `{id, nome, email, perfil_anterior}`, `valor_novo` = `{perfil: novo_perfil}`.
+- **Alteração de perfil de usuário**: `valor_anterior` = `{id, nome, email, perfil}`, `valor_novo` = `{perfil: novo_perfil}`.
 - **Anonimização** (LGPD): `valor_anterior = null`, `valor_novo` = `{motivo: "Exclusão de conta solicitada pelo titular (LGPD art. 18)"}`.
 
 ***
