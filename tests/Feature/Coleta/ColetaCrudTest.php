@@ -11,6 +11,7 @@ use App\Models\Localizacao;
 use App\Models\User;
 use Database\Seeders\ArtefatoTipoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ColetaCrudTest extends TestCase
@@ -172,6 +173,36 @@ class ColetaCrudTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['artefatos.0', 'artefatos.1']);
+    }
+
+    public function test_coleta_show_returns_localizacao_com_coordenadas(): void
+    {
+        $lat = -3.9264;
+        $lng = -41.4683;
+
+        /** @var Localizacao $localizacao */
+        $localizacao = Localizacao::factory()->create([
+            'municipio' => 'Piracuruca',
+            'uf' => 'PI',
+        ]);
+
+        DB::statement(
+            'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
+            [$lng, $lat, $localizacao->id]
+        );
+
+        $coleta = Coleta::factory()->create([
+            'usuario_id' => $this->coletor->id,
+            'localizacao_id' => $localizacao->id,
+        ]);
+
+        $response = $this->actingAs($this->coletor)
+            ->getJson("/api/v1/mobile/coletas/{$coleta->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.localizacao.lat', $lat)
+            ->assertJsonPath('data.localizacao.lng', $lng)
+            ->assertJsonPath('data.localizacao.municipio', 'Piracuruca');
     }
 
     public function test_soft_delete_nao_retorna_coleta_deletada(): void
