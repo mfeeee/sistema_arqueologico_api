@@ -77,8 +77,8 @@ class ColetaECuradoriaSeeder extends Seeder
     {
         $localizacao = $this->criarLocalizacao($dados);
 
-        // Remove chaves que pertencem apenas à Localizacao e não existem em coletas
-        $coletaDados = array_diff_key($dados, array_flip(['municipio']));
+        // Remove chaves que não pertencem à tabela coletas
+        $coletaDados = array_diff_key($dados, array_flip(['municipio', 'artefatos']));
 
         return Coleta::create([...$coletaDados, 'localizacao_id' => $localizacao->id]);
     }
