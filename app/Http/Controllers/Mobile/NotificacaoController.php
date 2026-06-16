@@ -42,4 +42,13 @@ class NotificacaoController extends Controller
 
         return response()->json(new NotificacaoResource($notificacao));
     }
+
+    public function vincularToken(Request $request): JsonResponse
+    {
+        $request->validate(['token' => 'required|string']);
+
+        $request->user()->update(['fcm_token' => $request->token]);
+
+        return response()->json(['message' => 'Token vinculado com sucesso.']);
+    }
 }
