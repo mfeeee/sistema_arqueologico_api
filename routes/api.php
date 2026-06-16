@@ -35,6 +35,8 @@ Route::prefix('auth')->group(function () {
         Route::post('/me/avatar', [ProfileController::class, 'uploadAvatar']);
         Route::delete('/me/avatar', [ProfileController::class, 'deleteAvatar']);
         Route::delete('/conta', [ProfileController::class, 'destroy']);
+        // Token FCM
+        Route::post('notificacoes/token', [NotificacaoController::class, 'vincularToken']);
     });
 });
 
