@@ -5,16 +5,18 @@ namespace App\Http\Controllers\Mobile;
 use App\Enums\ArtefatoBem;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Coleta\StoreColetaRequest;
+use App\Http\Resources\ColetaResource;
 use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
 use App\Models\Localizacao;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
 class ColetaController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Coleta::class);
 
@@ -23,10 +25,10 @@ class ColetaController extends Controller
             ->orderByDesc('data_coleta')
             ->paginate(20);
 
-        return response()->json($coletas);
+        return ColetaResource::collection($coletas);
     }
 
-    public function store(StoreColetaRequest $request): JsonResponse
+    public function store(StoreColetaRequest $request): ColetaResource
     {
         $validated = $request->validated();
 
@@ -82,21 +84,21 @@ class ColetaController extends Controller
             }
         }
 
-        return response()->json(
-            $coleta->load(['artefatoTipos.artefatoTipo', 'localizacao']), 201
+        return new ColetaResource(
+            $coleta->load(['artefatoTipos.artefatoTipo', 'localizacao'])
         );
     }
 
-    public function show(Coleta $coleta): JsonResponse
+    public function show(Coleta $coleta): ColetaResource
     {
         $this->authorize('view', $coleta);
 
-        return response()->json(
+        return new ColetaResource(
             $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
         );
     }
 
-    public function update(StoreColetaRequest $request, Coleta $coleta): JsonResponse
+    public function update(StoreColetaRequest $request, Coleta $coleta): ColetaResource
     {
         $this->authorize('update', $coleta);
 
@@ -131,7 +133,7 @@ class ColetaController extends Controller
 
         $coleta->update($validated);
 
-        return response()->json(
+        return new ColetaResource(
             $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
         );
     }
