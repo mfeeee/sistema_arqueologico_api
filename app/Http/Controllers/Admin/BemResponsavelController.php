@@ -8,6 +8,7 @@ use App\Models\BemMaterial;
 use App\Models\BemResponsavel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BemResponsavelController extends Controller
 {
@@ -18,7 +19,7 @@ class BemResponsavelController extends Controller
         $papelValues = implode(',', array_column(PapelResponsavelBem::cases(), 'value'));
 
         $request->validate([
-            'user_id' => ['required', 'uuid', 'exists:users,id'],
+            'user_id' => ['required', 'uuid', Rule::exists('users', 'id')->whereNull('deleted_at')->where('ativo', true)],
             'papel' => ['required', 'string', "in:{$papelValues}"],
         ]);
 
@@ -40,6 +41,10 @@ class BemResponsavelController extends Controller
     public function destroy(Request $request, BemMaterial $bemMaterial, BemResponsavel $bemResponsavel): JsonResponse
     {
         $this->authorize('update', $bemMaterial);
+
+        if ($bemResponsavel->bem_material_id !== $bemMaterial->id) {
+            abort(404);
+        }
 
         $bemResponsavel->delete();
 

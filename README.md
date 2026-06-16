@@ -419,9 +419,9 @@ Os endpoints mobile se dividem em dois grupos de autenticação:
 
 | Método | Endpoint | Descrição |
 |---|---|---|
-| `GET` | `/api/v1/admin/usuarios` | Lista todos os usuários (paginado, 20/página) com filtros opcionais `q` (nome ou e-mail) e `perfil` |
+| `GET` | `/api/v1/admin/usuarios` | Lista todos os usuários (apenas `admin`; paginado, 20/página) com filtros opcionais `q` (nome ou e-mail) e `perfil` |
 | `GET` | `/api/v1/admin/usuarios/curadores` | Lista usuários com perfil `curador` ou `admin` ativos (para seleção de responsável) |
-| `PATCH` | `/api/v1/admin/usuarios/{id}/perfil` | Altera o perfil de um usuário e registra auditoria com id/nome/e-mail do afetado |
+| `PATCH` | `/api/v1/admin/usuarios/{id}/perfil` | Altera o perfil de um usuário (apenas `admin`) e registra auditoria com id/nome/e-mail do afetado |
 
 > Um usuário não pode alterar o próprio perfil. Perfil `admin` não pode ser alterado.
 

@@ -36,8 +36,8 @@ Dados não pessoais mantidos: contribuições científicas (coletas, curadorias,
 
 1. O usuário logado acessa o menu de perfil (canto superior direito)
 2. Clica em **"Excluir minha conta"**
-3. Confirma digitando **EXCLUIR** no campo de confirmação
-4. O sistema executa a anonimização
+3. Confirma a exclusão na interface
+4. A API executa a anonimização via `DELETE /api/auth/conta`
 
 ### Fluxo técnico
 

@@ -90,9 +90,9 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     Route::delete('bens-materiais/{bemMaterial}/responsaveis/{bemResponsavel}', [BemResponsavelController::class, 'destroy']);
 
     // Usuários (admin)
-    Route::get('usuarios', [AdminUserController::class, 'index']);
+    Route::get('usuarios', [AdminUserController::class, 'index'])->middleware('role:admin');
     Route::get('usuarios/curadores', [AdminUserController::class, 'curadores']);
-    Route::patch('usuarios/{user}/perfil', [AdminUserController::class, 'updatePerfil']);
+    Route::patch('usuarios/{user}/perfil', [AdminUserController::class, 'updatePerfil'])->middleware('role:admin');
 
     // Auditorias (admin)
     Route::get('auditorias', [AuditoriaController::class, 'index']);
