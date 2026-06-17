@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CuradoriaController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\ProfileController;
+use App\Http\Controllers\Mobile\ArtefatoTipoController;
 use App\Http\Controllers\Mobile\ArtigoCientificoController;
 use App\Http\Controllers\Mobile\BemMaterialController;
 use App\Http\Controllers\Mobile\ColetaController;
@@ -53,6 +54,9 @@ Route::prefix('v1/mobile')->group(function () {
 
     // Autenticação obrigatória
     Route::middleware('auth:sanctum')->group(function () {
+        // Tipos de Artefato
+        Route::get('artefato-tipos', [ArtefatoTipoController::class, 'index']);
+
         // Coletas
         Route::apiResource('coletas', ColetaController::class);
 
