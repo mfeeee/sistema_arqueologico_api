@@ -8,6 +8,7 @@ use App\Models\Localizacao;
 use App\Models\Midia;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ShowTest extends TestCase
@@ -19,6 +20,8 @@ class ShowTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Storage::fake('s3');
 
         $this->user = User::factory()->create(['ativo' => true, 'perfil' => PerfilUsuario::ADMIN]);
     }
