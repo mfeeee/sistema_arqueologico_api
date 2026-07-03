@@ -35,7 +35,7 @@ class NotificacaoTest extends TestCase
             ->assertJsonCount(3, 'data')
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'titulo', 'corpo', 'tipo', 'lida', 'data'],
+                    '*' => ['id', 'titulo', 'corpo', 'tipo', 'lida', 'created_at'],
                 ],
             ]);
     }

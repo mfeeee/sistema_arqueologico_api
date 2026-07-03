@@ -14,6 +14,11 @@ class BemMaterialResource extends JsonResource
             'coleta_id' => $this->coleta_id,
             'localizacao_id' => $this->localizacao_id,
             'curador_responsavel_id' => $this->curador_responsavel_id,
+            'curador_responsavel' => $this->whenLoaded('curadorResponsavel', fn () => $this->curadorResponsavel ? [
+                'id' => $this->curadorResponsavel->id,
+                'name' => $this->curadorResponsavel->name,
+                'email' => $this->curadorResponsavel->email,
+            ] : null),
             'codigo_iphan' => $this->codigo_iphan,
             'nome_bem' => $this->nome_bem,
             'nomes_populares' => $this->nomesPopulares

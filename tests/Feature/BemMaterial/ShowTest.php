@@ -92,4 +92,24 @@ class ShowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.midias', []);
     }
+
+    public function test_show_retorna_curador_responsavel(): void
+    {
+        $curador = User::factory()->create([
+            'perfil' => PerfilUsuario::CURADOR,
+            'name' => 'Curadora Ana',
+            'email' => 'ana@curadoria.test',
+        ]);
+
+        $bem = BemMaterial::factory()->publicado()->create([
+            'curador_responsavel_id' => $curador->id,
+        ]);
+
+        $this->actingAs($this->user)
+            ->getJson('/api/v1/mobile/bens-materiais/'.$bem->id)
+            ->assertOk()
+            ->assertJsonPath('data.curador_responsavel.id', $curador->id)
+            ->assertJsonPath('data.curador_responsavel.name', 'Curadora Ana')
+            ->assertJsonPath('data.curador_responsavel.email', 'ana@curadoria.test');
+    }
 }
