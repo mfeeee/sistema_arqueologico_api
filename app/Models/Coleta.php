@@ -71,6 +71,14 @@ class Coleta extends Model
         return $this->morphMany(Midia::class, 'mediable');
     }
 
+    /**
+     * Curadorias desta coleta (a tabela é polimórfica).
+     */
+    public function curadorias(): HasMany
+    {
+        return $this->hasMany(Curadoria::class, 'entidade_id')->where('entidade_tipo', 'coleta');
+    }
+
     public function scopeDoUsuario($query, string $usuarioId): mixed
     {
         return $query->where('usuario_id', $usuarioId);

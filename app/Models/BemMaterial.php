@@ -26,7 +26,7 @@ class BemMaterial extends Model
         'curador_responsavel_id',
         'codigo_iphan',
         'nome_bem',
-        'nomes_populares',
+        // nomes_populares (coluna antiga) saiu: os nomes ficam em bem_nomes_populares (P21).
         'natureza',
         'tipo',
         'meios_acesso',

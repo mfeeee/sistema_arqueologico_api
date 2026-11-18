@@ -30,6 +30,13 @@ class Midia extends Model
         'tipo' => TipoMidia::class,
     ];
 
+    /**
+     * A URL entra no JSON também quando a mídia vem embutida em outra entidade (ex.: revisão de curadoria).
+     *
+     * @var list<string>
+     */
+    protected $appends = ['url'];
+
     public function getUrlAttribute(): ?string
     {
         if (! $this->storage_path) {

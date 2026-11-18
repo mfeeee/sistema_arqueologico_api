@@ -10,6 +10,7 @@ use App\Models\ArtigoBemMaterial;
 use App\Models\ArtigoCientifico;
 use App\Models\Auditoria;
 use App\Models\Curadoria;
+use App\Models\Notificacao;
 use App\Models\SubmissaoArtigo;
 use App\Models\SubmissaoAutor;
 use App\Models\User;
@@ -210,5 +211,34 @@ class AvaliacaoSubmissaoArtigoTest extends TestCase
             'curadoria_id' => $curadoria->id,
             'operacao' => 'Rejeição',
         ]);
+
+        // P19: quem submeteu fica sabendo, com o motivo.
+        $this->assertDatabaseHas('notificacoes', [
+            'usuario_id' => $submissao->usuario_id,
+            'titulo' => 'Artigo rejeitado',
+        ]);
+        $this->assertStringEndsWith('Motivo: DOI inválido.', Notificacao::where('usuario_id', $submissao->usuario_id)->value('corpo'));
+    }
+
+    public function test_acao_de_coleta_nao_vale_para_artigo(): void
+    {
+        $submissao = SubmissaoArtigo::factory()->create(['artigo_id' => null]);
+        $curadoria = Curadoria::factory()->create([
+            'entidade_tipo' => 'submissao_artigo',
+            'entidade_id' => $submissao->id,
+            'bem_material_id' => $submissao->bem_material_id,
+            'status' => StatusCuradoria::PENDENTE->value,
+        ]);
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('acao_resultante');
+
+        $this->assertSame(StatusCuradoria::PENDENTE, $curadoria->fresh()->status);
+        $this->assertSame('pendente', $submissao->fresh()->status);
     }
 }

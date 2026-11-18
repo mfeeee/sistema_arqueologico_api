@@ -19,7 +19,7 @@ class ColetaController extends Controller
         $this->authorize('viewAny', Coleta::class);
 
         $coletas = Coleta::where('usuario_id', $request->user()->id)
-            ->with(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
+            ->with(['localizacao', 'artefatoTipos.artefatoTipo', 'midias', 'curadorias'])
             ->orderByDesc('data_coleta')
             ->paginate(20);
 
@@ -41,7 +41,7 @@ class ColetaController extends Controller
         $this->authorize('view', $coleta);
 
         return new ColetaResource(
-            $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
+            $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias', 'curadorias'])
         );
     }
 

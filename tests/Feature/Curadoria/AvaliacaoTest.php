@@ -5,9 +5,15 @@ namespace Tests\Feature\Curadoria;
 use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\PerfilUsuario;
 use App\Enums\StatusCuradoria;
+use App\Enums\TipoMidia;
+use App\Models\ArtefatoTipo;
+use App\Models\BemArtefatoTipo;
 use App\Models\BemMaterial;
 use App\Models\Coleta;
 use App\Models\Curadoria;
+use App\Models\Midia;
+use App\Models\Notificacao;
+use App\Models\PreferenciaNotificacao;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -56,10 +62,9 @@ class AvaliacaoTest extends TestCase
             'coleta_id' => $coleta->id,
         ]);
 
-        $this->assertDatabaseHas('coletas', [
-            'id' => $coleta->id,
-            'status_sincronizacao' => 'sincronizado',
-        ]);
+        // P19: a curadoria não mexe no estado da sincronização.
+        $this->assertSame($coleta->status_sincronizacao, $coleta->fresh()->status_sincronizacao);
+        $this->assertDatabaseHas('notificacoes', ['usuario_id' => $this->coletor->id, 'titulo' => 'Coleta aprovada']);
     }
 
     public function test_coletor_nao_pode_avaliar_curadoria(): void
@@ -394,6 +399,140 @@ class AvaliacaoTest extends TestCase
                 'acao_resultante' => AcaoResultanteCuradoria::REJEITAR->value,
             ])
             ->assertStatus(422);
+    }
+
+    // ── Plano de correções, P17 e P18 ──────────────────────────────────────────
+
+    public function test_revisao_mostra_artefatos_e_fotos_da_coleta(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+        $coleta = Coleta::findOrFail($curadoria->entidade_id);
+        $this->artefato($coleta, 'Cerâmica');
+        $this->foto($coleta, 'https://fotos.example/coleta.jpg');
+
+        $this->actingAs($this->curador)
+            ->getJson("/api/v1/admin/curadorias/{$curadoria->id}")
+            ->assertOk()
+            ->assertJsonPath('coleta.artefato_tipos.0.artefato_tipo.nome', 'Cerâmica')
+            ->assertJsonPath('coleta.midias.0.url', 'https://fotos.example/coleta.jpg');
+    }
+
+    public function test_criar_sitio_leva_artefatos_nomes_e_fotos_da_coleta(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+        $coleta = Coleta::findOrFail($curadoria->entidade_id);
+        $coleta->update(['dados_coletados' => ['nomes_populares' => 'Toca da Onça, Pedra Furada']]);
+        $this->artefato($coleta, 'Cerâmica');
+        $this->artefato($coleta, 'Lítico');
+        $this->foto($coleta, 'https://fotos.example/coleta.jpg');
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertOk();
+
+        $bem = BemMaterial::where('coleta_id', $coleta->id)->firstOrFail();
+        $this->assertEqualsCanonicalizing(['Cerâmica', 'Lítico'], $bem->artefatoTipos()->with('artefatoTipo')->get()->pluck('artefatoTipo.nome')->all());
+        $this->assertEqualsCanonicalizing(['Toca da Onça', 'Pedra Furada'], $bem->nomesPopulares()->pluck('nome')->all());
+        $this->assertSame(['https://fotos.example/coleta.jpg'], $bem->midias()->pluck('storage_path')->all());
+    }
+
+    public function test_atualizar_sitio_soma_os_artefatos_da_coleta(): void
+    {
+        $bem = BemMaterial::factory()->create();
+        BemArtefatoTipo::factory()->create([
+            'bem_material_id' => $bem->id,
+            'artefato_tipo_id' => ArtefatoTipo::factory()->create(['nome' => 'Carvão'])->id,
+        ]);
+        $curadoria = $this->curadoriaPendente();
+        $this->artefato(Coleta::findOrFail($curadoria->entidade_id), 'Cerâmica');
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::ATUALIZAR_SITIO->value,
+                'bem_material_id' => $bem->id,
+            ])
+            ->assertOk();
+
+        $this->assertEqualsCanonicalizing(['Carvão', 'Cerâmica'], $bem->artefatoTipos()->with('artefatoTipo')->get()->pluck('artefatoTipo.nome')->all());
+    }
+
+    // ── Plano de correções, P19 ────────────────────────────────────────────────
+
+    public function test_coletor_ve_a_rejeicao_e_o_motivo_e_recebe_notificacao(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::REJEITADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::REJEITAR->value,
+                'observacao' => 'Foto sem escala',
+            ])
+            ->assertOk();
+
+        $this->actingAs($this->coletor)
+            ->getJson('/api/v1/mobile/coletas')
+            ->assertOk()
+            ->assertJsonPath('data.0.curadoria.status', 'rejeitado')
+            ->assertJsonPath('data.0.curadoria.observacao', 'Foto sem escala');
+
+        $notificacoes = Notificacao::where('usuario_id', $this->coletor->id)->get();
+        $this->assertCount(1, $notificacoes);
+        $this->assertSame('Coleta rejeitada', $notificacoes->first()->titulo);
+        $this->assertStringContainsString('Foto sem escala', $notificacoes->first()->corpo);
+    }
+
+    public function test_sem_notificacao_quando_o_coletor_desligou_a_preferencia(): void
+    {
+        PreferenciaNotificacao::factory()->create(['user_id' => $this->coletor->id, 'coleta' => false]);
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertOk();
+
+        $this->assertSame(0, Notificacao::where('usuario_id', $this->coletor->id)->count());
+    }
+
+    public function test_acao_de_artigo_nao_vale_para_coleta(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+
+        // "aprovar" é de artigo: em coleta caía no ramo de rejeição com status "aprovado".
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::APROVAR->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('acao_resultante');
+
+        $this->assertSame(StatusCuradoria::PENDENTE, $curadoria->fresh()->status);
+    }
+
+    private function artefato(Coleta $coleta, string $nome): void
+    {
+        $tipo = ArtefatoTipo::firstOrCreate(['nome' => $nome]);
+        $coleta->artefatoTipos()->create(['artefato_tipo_id' => $tipo->id]);
+    }
+
+    private function foto(Coleta $coleta, string $url): void
+    {
+        Midia::create([
+            'mediable_type' => Coleta::class,
+            'mediable_id' => $coleta->id,
+            'storage_disk' => 'external',
+            'storage_path' => $url,
+            'mime_type' => 'image/jpeg',
+            'tipo' => TipoMidia::IMAGEM,
+        ]);
     }
 
     private function curadoriaPendente(): Curadoria

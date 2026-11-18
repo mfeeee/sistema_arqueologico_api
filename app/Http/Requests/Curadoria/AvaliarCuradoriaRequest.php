@@ -40,6 +40,15 @@ class AvaliarCuradoriaRequest extends FormRequest
                     if ($rejeitar !== $rejeitado) {
                         $falha('A ação precisa combinar com o status: "rejeitar" só com "rejeitado".');
                     }
+
+                    // Coleta vira (ou atualiza) sítio; artigo só é aprovado ou rejeitado.
+                    $acoesValidas = $this->route('curadoria')?->entidade_tipo === 'submissao_artigo'
+                        ? [AcaoResultanteCuradoria::APROVAR, AcaoResultanteCuradoria::REJEITAR]
+                        : [AcaoResultanteCuradoria::CRIAR_SITIO, AcaoResultanteCuradoria::ATUALIZAR_SITIO, AcaoResultanteCuradoria::REJEITAR];
+
+                    if (! in_array(AcaoResultanteCuradoria::tryFrom((string) $valor), $acoesValidas, true)) {
+                        $falha('Esta ação não vale para este tipo de curadoria.');
+                    }
                 },
             ],
             'bem_material_id' => [
