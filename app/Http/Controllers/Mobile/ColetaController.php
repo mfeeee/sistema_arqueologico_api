@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers\Mobile;
 
-use App\Enums\ArtefatoBem;
+use App\Actions\RegistrarColetaAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Coleta\StoreColetaRequest;
 use App\Http\Resources\ColetaResource;
-use App\Models\ArtefatoTipo;
 use App\Models\Coleta;
-use App\Models\Localizacao;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ColetaController extends Controller
 {
@@ -28,61 +26,10 @@ class ColetaController extends Controller
         return ColetaResource::collection($coletas);
     }
 
-    public function store(StoreColetaRequest $request): ColetaResource
+    public function store(StoreColetaRequest $request, RegistrarColetaAction $registrar): ColetaResource
     {
-        $validated = $request->validated();
-
-        $localizacaoId = null;
-        $lat = $validated['latitude'] ?? null;
-        $lng = $validated['longitude'] ?? null;
-
-        if (! empty($validated['latitude']) && ! empty($validated['longitude'])) {
-            $localizacao = Localizacao::create([
-                'cep' => $validated['cep'] ?? null,
-                'logradouro' => $validated['logradouro'] ?? null,
-                'municipio' => $validated['municipio'] ?? null,
-                'uf' => $validated['uf'] ?? null,
-            ]);
-
-            DB::statement(
-                'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                [$lng, $lat, $localizacao->id]
-            );
-
-            $localizacaoId = $localizacao->id;
-        }
-
-        $coleta = Coleta::create([
-            'usuario_id' => $request->user()->id,
-            'data_coleta' => $validated['data_coleta'],
-            'nome_bem' => $validated['nome_bem'],
-            'latitude' => $validated['latitude'],
-            'longitude' => $validated['longitude'],
-            'natureza_bem' => $validated['natureza'] ?? null,
-            'tipo_bem' => $validated['tipo'] ?? null,
-            'uf' => $validated['uf'] ?? null,
-            'versao' => $validated['versao'] ?? 1,
-            'dados_coletados' => $validated['dados_coletados'] ?? [],
-            'localizacao_id' => $localizacaoId,
-        ]);
-
-        if (! empty($validated['artefatos'])) {
-            foreach ($validated['artefatos'] as $valor) {
-                try {
-                    $enum = ArtefatoBem::from($valor);
-                    $nome = $enum->label();
-
-                    $tipo = ArtefatoTipo::where('nome', $nome)->first();
-                    if ($tipo) {
-                        $coleta->artefatoTipos()->create([
-                            'artefato_tipo_id' => $tipo->id,
-                        ]);
-                    }
-                } catch (\ValueError $e) {
-                    // Ignora valores inválidos que passaram pela validação (improvável)
-                }
-            }
-        }
+        $dados = $request->validated() + ['id' => (string) Str::uuid(), 'versao' => 1];
+        $coleta = $registrar->execute($request->user(), $dados);
 
         return new ColetaResource(
             $coleta->load(['artefatoTipos.artefatoTipo', 'localizacao'])
@@ -98,40 +45,16 @@ class ColetaController extends Controller
         );
     }
 
-    public function update(StoreColetaRequest $request, Coleta $coleta): ColetaResource
+    public function update(StoreColetaRequest $request, Coleta $coleta, RegistrarColetaAction $registrar): ColetaResource
     {
         $this->authorize('update', $coleta);
 
-        $validated = $request->validated();
-        $lat = $validated['latitude'] ?? null;
-        $lng = $validated['longitude'] ?? null;
-
-        if ($lat !== null && $lng !== null) {
-            if ($coleta->localizacao_id) {
-                // Atualiza localização existente
-                $coleta->localizacao->update([
-                    'uf' => $validated['uf'] ?? $coleta->localizacao->uf,
-                    'municipio' => $validated['municipio'] ?? $coleta->localizacao->municipio,
-                ]);
-                DB::statement(
-                    'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                    [$lng, $lat, $coleta->localizacao_id]
-                );
-            } else {
-                // Cria nova localização e vincula
-                $localizacao = Localizacao::create([
-                    'uf' => $validated['uf'] ?? null,
-                    'municipio' => $validated['municipio'] ?? null,
-                ]);
-                DB::statement(
-                    'UPDATE localizacoes SET geom = ST_SetSRID(ST_MakePoint(?, ?), 4326) WHERE id = ?',
-                    [$lng, $lat, $localizacao->id]
-                );
-                $validated['localizacao_id'] = $localizacao->id;
-            }
-        }
-
-        $coleta->update($validated);
+        $validados = $request->validated();
+        $dados = array_merge($validados, [
+            'id' => $coleta->id,
+            'versao' => max((int) ($validados['versao'] ?? 0), $coleta->versao + 1),
+        ]);
+        $coleta = $registrar->execute($request->user(), $dados);
 
         return new ColetaResource(
             $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])

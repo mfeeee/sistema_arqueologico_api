@@ -16,4 +16,5 @@ return [
     'password_reset_failed' => 'Não foi possível redefinir a senha.',
     'curadoria_ja_avaliada' => 'Esta curadoria já foi avaliada.',
     'coleta_excluida' => 'A coleta desta curadoria foi excluída.',
+    'sync_recusado' => 'Nenhuma coleta foi aceita.',
 ];

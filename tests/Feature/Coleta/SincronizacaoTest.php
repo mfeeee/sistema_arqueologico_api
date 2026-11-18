@@ -2,12 +2,22 @@
 
 namespace Tests\Feature\Coleta;
 
+use App\Actions\RegistrarColetaAction;
+use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\PerfilUsuario;
+use App\Enums\StatusColeta;
+use App\Enums\StatusCuradoria;
 use App\Jobs\ProcessarSincronizacao;
+use App\Models\ArtefatoTipo;
+use App\Models\Coleta;
+use App\Models\Curadoria;
 use App\Models\User;
+use Database\Seeders\ArtefatoTipoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SincronizacaoTest extends TestCase
@@ -66,5 +76,123 @@ class SincronizacaoTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['coletas.0.latitude']);
+    }
+
+    // ── Plano de correções, P15 (o job roda na hora: QUEUE_CONNECTION=sync) ───
+
+    public function test_sync_grava_artefatos_fotos_localizacao_e_abre_curadoria(): void
+    {
+        Storage::fake('s3');
+        $this->seed(ArtefatoTipoSeeder::class);
+        $usuario = User::factory()->create();
+        $ceramica = ArtefatoTipo::where('nome', ArtefatoBem::CERAMICA->label())->firstOrFail();
+        $outros = ArtefatoTipo::where('nome', ArtefatoBem::OUTROS->label())->firstOrFail();
+        $id = (string) Str::uuid();
+
+        $this->actingAs($usuario)->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id, [
+            'localizacao' => ['municipio' => 'Teresina', 'cep' => '64000-000'],
+            'artefato_tipos' => [
+                ['id' => $ceramica->id, 'nome' => $ceramica->nome, 'novo_tipo' => false],
+                ['id' => (string) Str::uuid(), 'nome' => 'Contas de vidro', 'novo_tipo' => true, 'descricao_nova' => 'Contas de vidro'],
+            ],
+            'dados_coletados' => ['foto_urls' => [
+                Storage::disk('s3')->url('midias/foto1.jpg'),
+                'https://outro-site.example/foto.jpg',
+            ]],
+        ])]])->assertAccepted();
+
+        $coleta = Coleta::findOrFail($id);
+        $this->assertEqualsCanonicalizing([$ceramica->id, $outros->id], $coleta->artefatoTipos()->pluck('artefato_tipo_id')->all());
+        $this->assertSame('Contas de vidro', $coleta->artefatoTipos()->where('artefato_tipo_id', $outros->id)->value('descricao_nova'));
+        $this->assertSame(['midias/foto1.jpg'], $coleta->midias()->pluck('storage_path')->all());
+        $this->assertSame('Teresina', $coleta->localizacao->municipio);
+        $this->assertDatabaseHas('curadorias', ['entidade_tipo' => 'coleta', 'entidade_id' => $id, 'status' => 'pendente']);
+    }
+
+    public function test_sync_nao_altera_coleta_de_outro_usuario(): void
+    {
+        $dono = User::factory()->create();
+        $outro = User::factory()->create(['perfil' => PerfilUsuario::COLETOR]);
+        $coleta = Coleta::factory()->create(['usuario_id' => $dono->id, 'versao' => 1, 'nome_bem' => 'Original']);
+
+        $this->actingAs($outro)
+            ->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($coleta->id, ['nome_bem' => 'Trocado', 'versao' => 9])]])
+            ->assertForbidden();
+
+        $coleta->refresh();
+        $this->assertSame('Original', $coleta->nome_bem);
+        $this->assertSame($dono->id, $coleta->usuario_id);
+    }
+
+    public function test_job_nao_altera_nem_marca_conflito_em_coleta_de_outro_usuario(): void
+    {
+        $dono = User::factory()->create();
+        $outro = User::factory()->create(['perfil' => PerfilUsuario::COLETOR]);
+        $coleta = Coleta::factory()->create(['usuario_id' => $dono->id, 'nome_bem' => 'Original', 'status_sincronizacao' => StatusColeta::SINCRONIZADO]);
+
+        (new ProcessarSincronizacao($outro->id, [$this->coleta($coleta->id, ['nome_bem' => 'Trocado', 'versao' => 9])]))
+            ->handle(app(RegistrarColetaAction::class));
+
+        $coleta->refresh();
+        $this->assertSame('Original', $coleta->nome_bem);
+        $this->assertSame(StatusColeta::SINCRONIZADO, $coleta->status_sincronizacao);
+    }
+
+    public function test_sync_com_versao_antiga_responde_409_e_nao_altera(): void
+    {
+        $usuario = User::factory()->create();
+        $coleta = Coleta::factory()->create(['usuario_id' => $usuario->id, 'versao' => 5, 'nome_bem' => 'Versão 5']);
+
+        $this->actingAs($usuario)
+            ->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($coleta->id, ['nome_bem' => 'Versão 2', 'versao' => 2])]])
+            ->assertStatus(409)
+            ->assertJsonPath('conflitos.0', $coleta->id);
+
+        $this->assertSame('Versão 5', $coleta->fresh()->nome_bem);
+    }
+
+    public function test_reenvio_da_mesma_versao_nao_abre_segunda_curadoria(): void
+    {
+        $usuario = User::factory()->create();
+        $id = (string) Str::uuid();
+
+        foreach ([1, 2] as $_) {
+            $this->actingAs($usuario)->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id)]])->assertAccepted();
+        }
+
+        $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $id)->count());
+    }
+
+    public function test_edicao_depois_de_avaliada_atualiza_coleta_sem_nova_curadoria(): void
+    {
+        $usuario = User::factory()->create();
+        $id = (string) Str::uuid();
+
+        $this->actingAs($usuario)->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id)]])->assertAccepted();
+        Curadoria::where('entidade_id', $id)->update(['status' => StatusCuradoria::APROVADO->value]);
+
+        $this->actingAs($usuario)
+            ->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id, ['nome_bem' => 'Editado', 'versao' => 2])]])
+            ->assertAccepted();
+
+        $this->assertSame('Editado', Coleta::findOrFail($id)->nome_bem);
+        // Reabrir a revisão depois de avaliada é a D4 (adiada).
+        $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $id)->count());
+    }
+
+    /**
+     * @param  array<string, mixed>  $sobrescrever
+     * @return array<string, mixed>
+     */
+    private function coleta(string $id, array $sobrescrever = []): array
+    {
+        return array_merge([
+            'id' => $id,
+            'data_coleta' => '2026-05-01 08:00:00',
+            'nome_bem' => 'Sítio de teste',
+            'latitude' => -5.09,
+            'longitude' => -42.80,
+            'versao' => 1,
+        ], $sobrescrever);
     }
 }

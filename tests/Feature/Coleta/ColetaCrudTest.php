@@ -5,6 +5,7 @@ namespace Tests\Feature\Coleta;
 use App\Enums\ArtefatoBem;
 use App\Enums\NaturezaBem;
 use App\Enums\PerfilUsuario;
+use App\Enums\TipoBem;
 use App\Models\Coleta;
 use App\Models\ColetaArtefatoTipo;
 use App\Models\Localizacao;
@@ -244,5 +245,43 @@ class ColetaCrudTest extends TestCase
             ->assertJsonMissing(['id' => $coleta->id]);
 
         $this->assertSoftDeleted('coletas', ['id' => $coleta->id]);
+    }
+
+    // ── Plano de correções, P15 ─────────────────────────────────────────────
+
+    public function test_coleta_criada_pela_api_entra_na_fila_de_curadoria(): void
+    {
+        $id = $this->actingAs($this->coletor)
+            ->postJson('/api/v1/mobile/coletas', [
+                'data_coleta' => '2026-05-01 10:00:00',
+                'nome_bem' => 'Sítio na fila',
+                'latitude' => -5.0892,
+                'longitude' => -42.8016,
+            ])
+            ->assertCreated()
+            ->json('data.uuid');
+
+        $this->assertDatabaseHas('curadorias', ['entidade_tipo' => 'coleta', 'entidade_id' => $id, 'status' => 'pendente']);
+    }
+
+    public function test_editar_coleta_grava_natureza_e_tipo(): void
+    {
+        $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id, 'natureza_bem' => NaturezaBem::ARQUEOLOGICO]);
+
+        $this->actingAs($this->coletor)
+            ->putJson("/api/v1/mobile/coletas/{$coleta->id}", [
+                'data_coleta' => '2026-05-01 10:00:00',
+                'nome_bem' => 'Nome editado',
+                'latitude' => -5.0892,
+                'longitude' => -42.8016,
+                'natureza' => NaturezaBem::PALEONTOLOGICO->value,
+                'tipo' => TipoBem::SITIO->value,
+            ])
+            ->assertOk();
+
+        $coleta->refresh();
+        $this->assertSame(NaturezaBem::PALEONTOLOGICO, $coleta->natureza_bem);
+        $this->assertSame(TipoBem::SITIO, $coleta->tipo_bem);
+        $this->assertSame('Nome editado', $coleta->nome_bem);
     }
 }

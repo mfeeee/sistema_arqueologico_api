@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\SincronizacaoException;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\OptionalAuthenticate;
@@ -60,6 +61,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => __('errors.forbidden')], 403);
+            }
+        });
+
+        // Coleta de outro usuário, excluída ou com versão antiga (RegistrarColetaAction).
+        $exceptions->render(function (SincronizacaoException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 409);
             }
         });
 
