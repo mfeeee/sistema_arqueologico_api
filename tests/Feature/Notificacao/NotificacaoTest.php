@@ -149,4 +149,13 @@ class NotificacaoTest extends TestCase
         $this->patchJson("/api/v1/mobile/notificacoes/{$notificacao->id}/lida")
             ->assertStatus(401);
     }
+
+    public function test_vincular_token_salva_o_token_de_push(): void
+    {
+        $this->actingAs($this->usuario)
+            ->postJson('/api/auth/notificacoes/token', ['token' => 'token-push-123'])
+            ->assertOk();
+
+        $this->assertSame('token-push-123', $this->usuario->fresh()->fcm_token);
+    }
 }

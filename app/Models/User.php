@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -29,6 +30,20 @@ class User extends Authenticatable
         'perfil',
         'classificacao',
         'ativo',
+        'fcm_token',
+    ];
+
+    /**
+     * Campos que nunca saem da API.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'fcm_token',
     ];
 
     protected function casts(): array
@@ -69,5 +84,15 @@ class User extends Authenticatable
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
         $this->notify(new RecuperacaoSenhaNotification($token));
+    }
+
+    /**
+     * Caminho do avatar no S3, a partir da URL salva.
+     */
+    public function caminhoDoAvatar(): ?string
+    {
+        return $this->avatar_url
+            ? str_replace(Storage::disk('s3')->url(''), '', $this->avatar_url)
+            : null;
     }
 }

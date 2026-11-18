@@ -46,8 +46,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if ($user->avatar_url) {
-            $oldPath = str_replace(Storage::disk('s3')->url(''), '', $user->avatar_url);
-            Storage::disk('s3')->delete($oldPath);
+            Storage::disk('s3')->delete($user->caminhoDoAvatar());
         }
 
         $path = Storage::disk('s3')->putFile('avatars', $request->file('avatar'), 'public');
@@ -63,8 +62,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if ($user->avatar_url) {
-            $path = str_replace(Storage::disk('s3')->url(''), '', $user->avatar_url);
-            Storage::disk('s3')->delete($path);
+            Storage::disk('s3')->delete($user->caminhoDoAvatar());
         }
 
         $user->update(['avatar_url' => null]);
