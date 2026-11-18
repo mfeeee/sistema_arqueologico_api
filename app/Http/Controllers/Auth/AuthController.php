@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\PerfilUsuario;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,14 +44,16 @@ class AuthController extends Controller
         ]);
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
+        $dados = $request->validated();
+
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => $request->password,
+            'name' => $dados['name'],
+            'email' => $dados['email'],
+            'password' => $dados['password'],
             'perfil' => PerfilUsuario::COLETOR,
-            'classificacao' => $request->classificacao,
+            'classificacao' => $dados['classificacao'],
             'ativo' => true,
         ]);
 
@@ -76,10 +79,5 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => __('success.logout')]);
-    }
-
-    public function me(Request $request): JsonResponse
-    {
-        return response()->json($request->user());
     }
 }

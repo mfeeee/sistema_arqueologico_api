@@ -5,8 +5,8 @@ namespace App\Http\Requests\Auth;
 use App\Enums\ClassificacaoUsuario;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
@@ -28,7 +28,8 @@ class RegisterRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            // Mesma política de senha definida em AppServiceProvider::configureDefaults().
+            'password' => ['required', 'confirmed', Password::defaults()],
             'classificacao' => ['required', new Enum(ClassificacaoUsuario::class)],
         ];
     }
