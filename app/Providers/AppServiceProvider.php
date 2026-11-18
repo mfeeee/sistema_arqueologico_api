@@ -63,9 +63,19 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('public-api', function (Request $request): Limit {
-            return $request->user()
-                ? Limit::perMinute(120)->by($request->user()->id)
-                : Limit::perMinute(30)->by($request->ip());
+            if ($request->user()) {
+                return Limit::perMinute(120)->by($request->user()->id);
+            }
+
+            // O site Django chama a API do próprio servidor por todos os visitantes: com a chave,
+            // ele tem um limite próprio em vez de dividir os 30/min de um único IP (P23).
+            $chave = (string) config('services.web.client_key');
+
+            if ($chave !== '' && hash_equals($chave, (string) $request->header('X-Client-Key'))) {
+                return Limit::perMinute(1200)->by('site-web');
+            }
+
+            return Limit::perMinute(30)->by($request->ip());
         });
     }
 
