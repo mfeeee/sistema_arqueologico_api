@@ -2,6 +2,7 @@
 
 use App\Exceptions\SincronizacaoException;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\GarantirContaAtiva;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\OptionalAuthenticate;
 use App\Http\Middleware\SetLocale;
@@ -49,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => CheckRole::class,
             'auth.optional' => OptionalAuthenticate::class,
+            'conta.ativa' => GarantirContaAtiva::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

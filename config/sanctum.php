@@ -50,7 +50,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // D5: o token vale 30 dias; o app troca por um novo em POST /api/auth/refresh ao abrir.
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------

@@ -81,4 +81,18 @@ class AuthController extends Controller
 
         return response()->json(['message' => __('success.logout')]);
     }
+
+    /**
+     * Troca o token atual por um novo (D5). O app chama ao abrir, antes de os 30 dias vencerem;
+     * o token antigo deixa de valer.
+     */
+    public function refresh(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        return response()->json([
+            'token' => $user->createToken(name: 'mobile', abilities: [$user->perfil->value])->plainTextToken,
+        ]);
+    }
 }

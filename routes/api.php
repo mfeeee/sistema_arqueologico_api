@@ -29,8 +29,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/password-reset', [PasswordResetController::class, 'solicitar']);
     Route::post('/password-reset/confirm', [PasswordResetController::class, 'confirmar']);
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'conta.ativa'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::get('/me', [ProfileController::class, 'show']);
         Route::patch('/me', [ProfileController::class, 'update']);
         Route::post('/me/avatar', [ProfileController::class, 'uploadAvatar']);
@@ -44,7 +45,7 @@ Route::prefix('auth')->group(function () {
 // -- Mobile
 Route::prefix('v1/mobile')->group(function () {
     // Leitura pública — token opcional, validado se enviado; 30 req/min (guest) ou 120 (autenticado)
-    Route::middleware(['auth.optional:sanctum', 'throttle:public-api'])->group(function () {
+    Route::middleware(['auth.optional:sanctum', 'conta.ativa', 'throttle:public-api'])->group(function () {
         Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
         Route::get('bens-materiais', [BemMaterialController::class, 'index']);
         Route::get('bens-materiais/{bemMaterial}', [BemMaterialController::class, 'show']);
@@ -53,7 +54,7 @@ Route::prefix('v1/mobile')->group(function () {
     });
 
     // Autenticação obrigatória
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'conta.ativa'])->group(function () {
         // Tipos de Artefato
         Route::get('artefato-tipos', [ArtefatoTipoController::class, 'index']);
 
@@ -81,7 +82,7 @@ Route::prefix('v1/mobile')->group(function () {
 });
 
 // -- Admin/Site
-Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->group(function () {
+Route::prefix('v1/admin')->middleware(['auth:sanctum', 'conta.ativa', 'role:admin,curador'])->group(function () {
     // Curadorias
     Route::get('curadorias', [CuradoriaController::class, 'index']);
     Route::get('curadorias/{curadoria}', [CuradoriaController::class, 'show']);

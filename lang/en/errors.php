@@ -7,7 +7,7 @@ return [
     'internal_error' => 'Internal server error.',
     'validation_error' => 'Validation error.',
     'invalid_credentials' => 'Invalid credentials.',
-    'account_disabled' => 'Account disabled.',
+    'account_disabled' => 'Account deactivated.',
     'token_expired' => 'Session expired. Please sign in again.',
     'duplicate_entry' => 'Duplicate entry.',
     'required_field' => "The field ':field' is required.",
