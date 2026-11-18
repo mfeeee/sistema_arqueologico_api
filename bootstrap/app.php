@@ -26,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Atrás do proxy do Railway, o IP da conexão é o do proxy; o IP real vem no X-Forwarded-For,
+        // que o proxy reescreve. Sem isso, os limites por IP valem para todos os visitantes juntos (P30).
+        $middleware->trustProxies(at: '*');
+
         $middleware->statefulApi();
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);

@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
@@ -77,6 +78,11 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return Limit::perMinute(30)->by($request->ip());
+        });
+
+        // Contra tentativa de senha em massa: por e-mail e IP, para um atacante não travar a conta de outra pessoa.
+        RateLimiter::for('login', function (Request $request): Limit {
+            return Limit::perMinute(10)->by(Str::lower((string) $request->input('email')).'|'.$request->ip());
         });
     }
 

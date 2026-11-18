@@ -24,10 +24,13 @@ use Illuminate\Support\Facades\Route;
 // -- Auth (Publico)
 
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/password-reset', [PasswordResetController::class, 'solicitar']);
-    Route::post('/password-reset/confirm', [PasswordResetController::class, 'confirmar']);
+    // 10 tentativas por minuto por e-mail e IP (P30).
+    Route::middleware('throttle:login')->group(function () {
+        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/register', [AuthController::class, 'register']);
+        Route::post('/password-reset', [PasswordResetController::class, 'solicitar']);
+        Route::post('/password-reset/confirm', [PasswordResetController::class, 'confirmar']);
+    });
 
     Route::middleware(['auth:sanctum', 'conta.ativa'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
