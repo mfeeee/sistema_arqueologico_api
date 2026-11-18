@@ -96,4 +96,21 @@ class SubmissaoArtigoControllerTest extends TestCase
         $response->assertJsonPath('artigo.autores.0.nome_autor', 'Pessis, A.-M.')
             ->assertJsonPath('artigo.autores.1.nome_autor', 'Guidon, N.');
     }
+
+    public function test_submissao_para_sitio_excluido_e_recusada(): void
+    {
+        $bem = BemMaterial::factory()->create();
+        $bem->delete();
+
+        $this->actingAs($this->user)
+            ->postJson('/api/v1/mobile/submissoes-artigos', [
+                'bem_material_id' => $bem->id,
+                'doi' => '10.1234/sitio-excluido',
+                'titulo' => 'Artigo sobre sítio excluído',
+                'autores' => ['Autor, A.'],
+                'tipo_mencao' => TipoMencaoArtigo::CITACAO->value,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['bem_material_id']);
+    }
 }
