@@ -170,4 +170,50 @@ class BemResponsavelControllerTest extends TestCase
             ->deleteJson("/api/v1/admin/bens-materiais/{$bem->id}/responsaveis/{$responsavel->id}")
             ->assertForbidden();
     }
+
+    // ── auditoria (plano de correções, R4) ────────────────────────────────────
+
+    public function test_vincular_e_remover_responsavel_ficam_na_auditoria(): void
+    {
+        $bem = BemMaterial::factory()->create();
+        $usuario = User::factory()->create(['ativo' => true]);
+
+        $this->actingAs($this->curador)
+            ->postJson("/api/v1/admin/bens-materiais/{$bem->id}/responsaveis", [
+                'user_id' => $usuario->id,
+                'papel' => PapelResponsavelBem::PESQUISADOR->value,
+            ])->assertOk();
+
+        $responsavel = BemResponsavel::where('bem_material_id', $bem->id)->where('user_id', $usuario->id)->firstOrFail();
+
+        $this->actingAs($this->curador)
+            ->deleteJson("/api/v1/admin/bens-materiais/{$bem->id}/responsaveis/{$responsavel->id}")
+            ->assertOk();
+
+        foreach (['Inserção', 'Remoção'] as $operacao) {
+            $this->assertDatabaseHas('auditorias', [
+                'entidade_tipo' => BemResponsavel::class,
+                'entidade_id' => $responsavel->id,
+                'operacao' => $operacao,
+            ]);
+        }
+    }
+
+    public function test_troca_de_papel_fica_na_auditoria(): void
+    {
+        $bem = BemMaterial::factory()->create();
+        $responsavel = BemResponsavel::factory()->pesquisador()->create(['bem_material_id' => $bem->id]);
+
+        $this->actingAs($this->curador)
+            ->postJson("/api/v1/admin/bens-materiais/{$bem->id}/responsaveis", [
+                'user_id' => $responsavel->user_id,
+                'papel' => PapelResponsavelBem::CURADOR->value,
+            ])->assertOk();
+
+        $this->assertDatabaseHas('auditorias', [
+            'entidade_tipo' => BemResponsavel::class,
+            'entidade_id' => $responsavel->id,
+            'operacao' => 'Alteração',
+        ]);
+    }
 }
