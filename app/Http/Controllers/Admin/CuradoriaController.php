@@ -196,7 +196,7 @@ class CuradoriaController extends Controller
 
         if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
             [$campos, $relacoes] = $this->separarRelacoes($this->resolverCampos($request, $curadoria));
-            $bem = $this->criarBemMaterial($curadoria, $request->user()->id, (bool) $request->input('publicado', false), $campos);
+            $bem = $this->criarBemMaterial($curadoria, $request->user()->id, (bool) $request->input('publicado', false), $request->string('tipo')->value(), $campos);
             $this->copiarDadosDaColeta($bem, $curadoria->coleta, $relacoes, aceitarTudo: ! $request->filled('campos'));
             $bemMaterialId = $bem->id;
 
@@ -547,12 +547,12 @@ class CuradoriaController extends Controller
     /**
      * Cria um novo BemMaterial a partir dos dados da coleta,
      * incluindo campos extras presentes em dados_coletados.
-     */
-    /**
+     *
+     * @param  string  $tipo  Decidido pelo curador (D2); o tipo_bem da coleta é só sugestão.
      * @param  array<string, mixed>  $camposSelecionados  Campos aceitos pelo curador.
      *                                                    Vazio = aceita todos os campos não-nulos da coleta.
      */
-    private function criarBemMaterial(Curadoria $curadoria, string $curadorId, bool $publicado = false, array $camposSelecionados = []): BemMaterial
+    private function criarBemMaterial(Curadoria $curadoria, string $curadorId, bool $publicado, string $tipo, array $camposSelecionados = []): BemMaterial
     {
         $coleta = $curadoria->coleta;
         $dados = is_array($coleta->dados_coletados) ? $coleta->dados_coletados : [];
@@ -562,6 +562,7 @@ class CuradoriaController extends Controller
             'coleta_id' => $coleta->id,
             'curador_responsavel_id' => $curadorId,
             'publicado' => $publicado,
+            'tipo' => $tipo,
             'ano_registro' => Carbon::now()->year,
             'latitude' => $coleta->latitude,
             'longitude' => $coleta->longitude,
@@ -571,7 +572,6 @@ class CuradoriaController extends Controller
         $candidatos = [
             'nome_bem' => $coleta->nome_bem,
             'natureza' => $coleta->natureza_bem?->value,
-            'tipo' => $coleta->tipo_bem?->value,
             'uf' => $coleta->uf,
             'meios_acesso' => $dados['meios_acesso'] ?? null,
             'municipio' => $dados['municipio'] ?? null,

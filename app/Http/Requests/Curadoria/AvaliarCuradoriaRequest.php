@@ -4,6 +4,7 @@ namespace App\Http\Requests\Curadoria;
 
 use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\StatusCuradoria;
+use App\Enums\TipoBem;
 use App\Models\Curadoria;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -56,6 +57,12 @@ class AvaliarCuradoriaRequest extends FormRequest
                     fn () => $this->input('acao_resultante') === AcaoResultanteCuradoria::ATUALIZAR_SITIO->value
                 ),
                 'nullable', 'uuid', Rule::exists('bens_materiais', 'id')->whereNull('deleted_at'),
+            ],
+            // D2: o tipo do sítio novo é decisão do curador; o tipo_bem da coleta é só sugestão.
+            'tipo' => [
+                Rule::requiredIf(fn (): bool => $this->input('acao_resultante') === AcaoResultanteCuradoria::CRIAR_SITIO->value),
+                'nullable',
+                Rule::enum(TipoBem::class),
             ],
             'observacao' => ['nullable', 'string', 'max:2000'],
             'publicado' => ['sometimes', 'nullable', 'boolean'],

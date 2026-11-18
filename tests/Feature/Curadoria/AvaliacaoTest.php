@@ -5,6 +5,7 @@ namespace Tests\Feature\Curadoria;
 use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\PerfilUsuario;
 use App\Enums\StatusCuradoria;
+use App\Enums\TipoBem;
 use App\Enums\TipoMidia;
 use App\Models\ArtefatoTipo;
 use App\Models\BemArtefatoTipo;
@@ -48,6 +49,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
                 'observacao' => 'Sítio validado em campo.',
             ]);
 
@@ -81,6 +83,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertStatus(403);
     }
@@ -157,6 +160,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertStatus(200);
 
@@ -307,6 +311,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertStatus(422);
 
@@ -334,6 +339,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::PENDENTE->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['status']);
@@ -363,6 +369,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertOk();
 
@@ -430,6 +437,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertOk();
 
@@ -495,6 +503,7 @@ class AvaliacaoTest extends TestCase
             ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
                 'status' => StatusCuradoria::APROVADO->value,
                 'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::SITIO->value,
             ])
             ->assertOk();
 
@@ -515,6 +524,42 @@ class AvaliacaoTest extends TestCase
             ->assertJsonValidationErrors('acao_resultante');
 
         $this->assertSame(StatusCuradoria::PENDENTE, $curadoria->fresh()->status);
+    }
+
+    // ── Plano de correções, P26 (D2) ───────────────────────────────────────────
+
+    public function test_criar_sitio_exige_o_tipo_decidido_pelo_curador(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('tipo');
+
+        $this->assertSame(StatusCuradoria::PENDENTE, $curadoria->fresh()->status);
+        $this->assertSame(0, BemMaterial::count());
+    }
+
+    public function test_tipo_do_curador_vale_mesmo_com_outra_sugestao_da_coleta(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+        Coleta::findOrFail($curadoria->entidade_id)->update(['tipo_bem' => TipoBem::SITIO]);
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+                'tipo' => TipoBem::COLECAO->value,
+                // Mesmo que o cliente mande o tipo da coleta entre os campos aceitos.
+                'campos' => ['nome_bem' => 'Sítio novo', 'tipo' => TipoBem::SITIO->value],
+            ])
+            ->assertOk();
+
+        $this->assertSame(TipoBem::COLECAO, BemMaterial::where('coleta_id', $curadoria->entidade_id)->sole()->tipo);
     }
 
     private function artefato(Coleta $coleta, string $nome): void
