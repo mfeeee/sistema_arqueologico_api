@@ -91,6 +91,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     // Bens Materiais (admin)
     Route::patch('bens-materiais/{bemMaterial}/publicar', [AdminBemMaterialController::class, 'publicar']);
     Route::patch('bens-materiais/{bemMaterial}/curador-responsavel', [AdminBemMaterialController::class, 'atualizarCuradorResponsavel']);
+    Route::patch('bens-materiais/{bemMaterial}/codigo-iphan', [AdminBemMaterialController::class, 'atualizarCodigoIphan']);
     Route::delete('bens-materiais/{bemMaterial}', [AdminBemMaterialController::class, 'destroy']);
     Route::post('bens-materiais/{bemMaterial}/responsaveis', [BemResponsavelController::class, 'store']);
     Route::delete('bens-materiais/{bemMaterial}/responsaveis/{bemResponsavel}', [BemResponsavelController::class, 'destroy']);
