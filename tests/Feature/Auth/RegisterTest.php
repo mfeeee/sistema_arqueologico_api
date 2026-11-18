@@ -50,9 +50,31 @@ class RegisterTest extends TestCase
         $this->assertSame(PerfilUsuario::COLETOR, User::where('email', 'ana@exemplo.com')->firstOrFail()->perfil);
     }
 
+    public function test_cadastro_guarda_quando_os_termos_foram_aceitos(): void
+    {
+        $this->postJson('/api/auth/register', $this->dadosValidos(['termos_aceitos' => true]))
+            ->assertCreated();
+
+        $this->assertNotNull(User::where('email', 'ana@exemplo.com')->firstOrFail()->termos_aceitos_em);
+    }
+
+    public function test_cadastro_com_termos_recusados_responde_422(): void
+    {
+        $this->postJson('/api/auth/register', $this->dadosValidos(['termos_aceitos' => false]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['termos_aceitos']);
+    }
+
+    public function test_cadastro_sem_o_campo_ainda_passa_sem_data_de_aceite(): void
+    {
+        $this->postJson('/api/auth/register', $this->dadosValidos())->assertCreated();
+
+        $this->assertNull(User::where('email', 'ana@exemplo.com')->firstOrFail()->termos_aceitos_em);
+    }
+
     /**
-     * @param  array<string, string>  $sobrescrever
-     * @return array<string, string>
+     * @param  array<string, mixed>  $sobrescrever
+     * @return array<string, mixed>
      */
     private function dadosValidos(array $sobrescrever = []): array
     {

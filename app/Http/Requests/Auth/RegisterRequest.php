@@ -31,6 +31,8 @@ class RegisterRequest extends FormRequest
             // Mesma política de senha definida em AppServiceProvider::configureDefaults().
             'password' => ['required', 'confirmed', Password::defaults()],
             'classificacao' => ['required', new Enum(ClassificacaoUsuario::class)],
+            // shortcut: opcional porque o app ainda não tem a caixa de aceite (A4); vira 'required' quando ele estiver nas lojas.
+            'termos_aceitos' => ['sometimes', 'accepted'],
         ];
     }
 }

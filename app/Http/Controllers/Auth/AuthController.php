@@ -55,6 +55,7 @@ class AuthController extends Controller
             'perfil' => PerfilUsuario::COLETOR,
             'classificacao' => $dados['classificacao'],
             'ativo' => true,
+            'termos_aceitos_em' => $request->boolean('termos_aceitos') ? now() : null,
         ]);
 
         $token = $user->createToken(

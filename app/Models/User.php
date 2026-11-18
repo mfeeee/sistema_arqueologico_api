@@ -31,6 +31,7 @@ class User extends Authenticatable
         'classificacao',
         'ativo',
         'fcm_token',
+        'termos_aceitos_em',
     ];
 
     /**
@@ -50,6 +51,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'termos_aceitos_em' => 'datetime',
             'password' => 'hashed',
             'ativo' => 'boolean',
             'perfil' => PerfilUsuario::class,
