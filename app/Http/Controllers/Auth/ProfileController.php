@@ -29,7 +29,7 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request): JsonResponse
     {
         $user = $request->user();
-        $user->update($request->validated());
+        $user->update($request->safe()->except('password_confirmation'));
 
         return response()->json([
             'id' => $user->id,
