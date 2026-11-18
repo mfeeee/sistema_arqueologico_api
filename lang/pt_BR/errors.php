@@ -14,4 +14,6 @@ return [
     'invalid_format' => "Formato inválido para o campo ':field'.",
     'invalid_token' => 'Token inválido ou expirado.',
     'password_reset_failed' => 'Não foi possível redefinir a senha.',
+    'curadoria_ja_avaliada' => 'Esta curadoria já foi avaliada.',
+    'coleta_excluida' => 'A coleta desta curadoria foi excluída.',
 ];

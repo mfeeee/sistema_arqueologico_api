@@ -5,6 +5,7 @@ namespace App\Http\Requests\Curadoria;
 use App\Enums\AcaoResultanteCuradoria;
 use App\Enums\StatusCuradoria;
 use App\Models\Curadoria;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,13 +28,25 @@ class AvaliarCuradoriaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::enum(StatusCuradoria::class)],
-            'acao_resultante' => ['required', Rule::enum(AcaoResultanteCuradoria::class)],
+            // Avaliar é decidir: "pendente" não é uma decisão.
+            'status' => ['required', Rule::enum(StatusCuradoria::class)->except([StatusCuradoria::PENDENTE])],
+            'acao_resultante' => [
+                'required',
+                Rule::enum(AcaoResultanteCuradoria::class),
+                function (string $atributo, mixed $valor, Closure $falha): void {
+                    $rejeitar = $valor === AcaoResultanteCuradoria::REJEITAR->value;
+                    $rejeitado = $this->input('status') === StatusCuradoria::REJEITADO->value;
+
+                    if ($rejeitar !== $rejeitado) {
+                        $falha('A ação precisa combinar com o status: "rejeitar" só com "rejeitado".');
+                    }
+                },
+            ],
             'bem_material_id' => [
                 Rule::requiredIf(
                     fn () => $this->input('acao_resultante') === AcaoResultanteCuradoria::ATUALIZAR_SITIO->value
                 ),
-                'nullable', 'uuid', 'exists:bens_materiais,id',
+                'nullable', 'uuid', Rule::exists('bens_materiais', 'id')->whereNull('deleted_at'),
             ],
             'observacao' => ['nullable', 'string', 'max:2000'],
             'publicado' => ['sometimes', 'nullable', 'boolean'],

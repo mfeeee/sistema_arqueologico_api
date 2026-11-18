@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\AcaoResultanteCuradoria;
+use App\Enums\PerfilUsuario;
 use App\Enums\StatusColeta;
+use App\Enums\StatusCuradoria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Curadoria\AvaliarCuradoriaRequest;
 use App\Models\ArtigoAutor;
@@ -73,7 +75,7 @@ class CuradoriaController extends Controller
      * Agrega coletas aprovadas e submissões de artigos aprovadas.
      * GET /admin/bens-materiais/{id}/colaboradores
      */
-    public function colaboradores(BemMaterial $bemMaterial): JsonResponse
+    public function colaboradores(Request $request, BemMaterial $bemMaterial): JsonResponse
     {
         $this->authorize('view', $bemMaterial);
 
@@ -109,6 +111,13 @@ class CuradoriaController extends Controller
             ORDER BY u.name, contrib.origem
         ", [$bemMaterial->id, $bemMaterial->id]);
 
+        // A rota também é pública: e-mail é dado pessoal e só curador e admin veem (LGPD).
+        if (! in_array($request->user()?->perfil, [PerfilUsuario::CURADOR, PerfilUsuario::ADMIN], true)) {
+            foreach ($colaboradores as $colaborador) {
+                unset($colaborador->email);
+            }
+        }
+
         return response()->json([
             'bem_material_id' => $bemMaterial->id,
             'colaboradores' => $colaboradores,
@@ -119,10 +128,17 @@ class CuradoriaController extends Controller
     {
         $this->authorize('avaliar', $curadoria);
 
-        DB::transaction(function () use ($request, $curadoria) {
-            match ($curadoria->entidade_tipo) {
-                'coleta' => $this->avaliarColeta($request, $curadoria),
-                'submissao_artigo' => $this->avaliarSubmissaoArtigo($request, $curadoria),
+        DB::transaction(function () use ($request, $curadoria): void {
+            // Trava a linha: duas avaliações simultâneas da mesma curadoria esperam uma pela outra.
+            $travada = Curadoria::whereKey($curadoria->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($travada->status !== StatusCuradoria::PENDENTE) {
+                abort(422, __('errors.curadoria_ja_avaliada'));
+            }
+
+            match ($travada->entidade_tipo) {
+                'coleta' => $this->avaliarColeta($request, $travada),
+                'submissao_artigo' => $this->avaliarSubmissaoArtigo($request, $travada),
                 default => null,
             };
         });
@@ -155,12 +171,17 @@ class CuradoriaController extends Controller
      */
     private function avaliarColeta(AvaliarCuradoriaRequest $request, Curadoria $curadoria): void
     {
+        // Coleta usa exclusão lógica: depois de excluída, a relação vem nula.
+        if ($curadoria->coleta === null) {
+            abort(422, __('errors.coleta_excluida'));
+        }
+
         $acao = AcaoResultanteCuradoria::from($request->acao_resultante);
         $bemMaterialId = null;
 
         if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
             $campos = $this->resolverCampos($request, $curadoria);
-            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false), $campos);
+            $bem = $this->criarBemMaterial($curadoria, $request->user()->id, (bool) $request->input('publicado', false), $campos);
             $bemMaterialId = $bem->id;
 
             Auditoria::create([
@@ -181,7 +202,15 @@ class CuradoriaController extends Controller
             $anterior = $this->snapshot($bem);
 
             $campos = $this->resolverCampos($request, $curadoria);
-            $campos['publicado'] = (bool) $request->input('publicado', false);
+            // A publicação é decisão separada: sem o campo, o sítio mantém o estado atual.
+            $campos['publicado'] = $request->has('publicado')
+                ? $request->boolean('publicado')
+                : (bool) $bem->publicado;
+
+            // Responsável técnico = curador que aprovou (quadro CNSA do TCC), se ainda não houver.
+            if ($bem->curador_responsavel_id === null) {
+                $campos['curador_responsavel_id'] = $request->user()->id;
+            }
 
             if (! empty($campos)) {
                 BemMaterial::withoutEvents(fn () => $bem->update($campos));
@@ -468,7 +497,7 @@ class CuradoriaController extends Controller
      * @param  array<string, mixed>  $camposSelecionados  Campos aceitos pelo curador.
      *                                                    Vazio = aceita todos os campos não-nulos da coleta.
      */
-    private function criarBemMaterial(Curadoria $curadoria, bool $publicado = false, array $camposSelecionados = []): BemMaterial
+    private function criarBemMaterial(Curadoria $curadoria, string $curadorId, bool $publicado = false, array $camposSelecionados = []): BemMaterial
     {
         $coleta = $curadoria->coleta;
         $dados = is_array($coleta->dados_coletados) ? $coleta->dados_coletados : [];
@@ -476,6 +505,7 @@ class CuradoriaController extends Controller
         // Campos obrigatórios — sempre incluídos independente da seleção.
         $base = [
             'coleta_id' => $coleta->id,
+            'curador_responsavel_id' => $curadorId,
             'publicado' => $publicado,
             'ano_registro' => Carbon::now()->year,
             'latitude' => $coleta->latitude,

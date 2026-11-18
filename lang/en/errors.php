@@ -14,4 +14,6 @@ return [
     'invalid_format' => "Invalid format for field ':field'.",
     'invalid_token' => 'Invalid or expired token.',
     'password_reset_failed' => 'Unable to reset password.',
+    'curadoria_ja_avaliada' => 'This review has already been evaluated.',
+    'coleta_excluida' => 'The collection for this review was deleted.',
 ];

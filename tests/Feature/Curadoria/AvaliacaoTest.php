@@ -290,4 +290,122 @@ class AvaliacaoTest extends TestCase
             'coleta_id' => $coleta->id,
         ]);
     }
+
+    // ── Plano de correções, Fase 1 ─────────────────────────────────────────────
+
+    public function test_curadoria_ja_avaliada_nao_pode_ser_avaliada_de_novo(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+        $curadoria->update(['status' => StatusCuradoria::APROVADO]);
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertStatus(422);
+
+        $this->assertSame(0, BemMaterial::where('coleta_id', $curadoria->entidade_id)->count());
+    }
+
+    public function test_status_e_acao_precisam_combinar(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::REJEITAR->value,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['acao_resultante']);
+    }
+
+    public function test_avaliacao_nao_aceita_status_pendente(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::PENDENTE->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_aprovar_atualizacao_sem_publicado_mantem_o_sitio_publicado(): void
+    {
+        $bem = BemMaterial::factory()->publicado()->create();
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::ATUALIZAR_SITIO->value,
+                'bem_material_id' => $bem->id,
+            ])
+            ->assertOk();
+
+        $this->assertTrue($bem->fresh()->publicado);
+    }
+
+    public function test_criar_sitio_grava_o_curador_responsavel(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::CRIAR_SITIO->value,
+            ])
+            ->assertOk();
+
+        $this->assertSame(
+            $this->curador->id,
+            BemMaterial::where('coleta_id', $curadoria->entidade_id)->value('curador_responsavel_id'),
+        );
+    }
+
+    public function test_atualizar_sitio_preenche_curador_responsavel_vazio(): void
+    {
+        $bem = BemMaterial::factory()->create(['curador_responsavel_id' => null]);
+        $curadoria = $this->curadoriaPendente();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::APROVADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::ATUALIZAR_SITIO->value,
+                'bem_material_id' => $bem->id,
+            ])
+            ->assertOk();
+
+        $this->assertSame($this->curador->id, $bem->fresh()->curador_responsavel_id);
+    }
+
+    public function test_avaliar_coleta_excluida_responde_422(): void
+    {
+        $curadoria = $this->curadoriaPendente();
+        Coleta::findOrFail($curadoria->entidade_id)->delete();
+
+        $this->actingAs($this->curador)
+            ->patchJson("/api/v1/admin/curadorias/{$curadoria->id}/avaliar", [
+                'status' => StatusCuradoria::REJEITADO->value,
+                'acao_resultante' => AcaoResultanteCuradoria::REJEITAR->value,
+            ])
+            ->assertStatus(422);
+    }
+
+    private function curadoriaPendente(): Curadoria
+    {
+        $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id]);
+
+        return Curadoria::factory()->create([
+            'entidade_tipo' => 'coleta',
+            'entidade_id' => $coleta->id,
+            'bem_material_id' => null,
+            'usuario_id' => $this->coletor->id,
+            'status' => StatusCuradoria::PENDENTE->value,
+        ]);
+    }
 }
