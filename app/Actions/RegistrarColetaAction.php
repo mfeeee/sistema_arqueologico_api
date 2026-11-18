@@ -20,11 +20,13 @@ use Illuminate\Support\Str;
 class RegistrarColetaAction
 {
     /**
-     * Cria ou atualiza uma coleta (sync do app ou rota REST) e a coloca na fila de curadoria.
+     * Cria ou atualiza uma coleta (sync do app ou rota REST). Sincronizar só guarda no servidor:
+     * a curadoria começa quando o coletor envia (enviarParaCuradoria).
      *
      * @param  array<string, mixed>  $dados  Uma coleta já validada.
      *
-     * @throws SincronizacaoException quando a coleta é de outro usuário, foi excluída ou tem versão antiga.
+     * @throws SincronizacaoException quando a coleta é de outro usuário, foi excluída, tem versão antiga
+     *                                ou já foi enviada para curadoria (aí não pode mais ser editada).
      */
     public function execute(User $usuario, array $dados): Coleta
     {
@@ -37,6 +39,10 @@ class RegistrarColetaAction
 
             if ($existente?->trashed()) {
                 throw new SincronizacaoException("Coleta {$dados['id']} foi excluída.");
+            }
+
+            if ($existente !== null && $this->foiEnviadaParaCuradoria($existente)) {
+                throw new SincronizacaoException(__('errors.coleta_ja_enviada'));
             }
 
             $versao = (int) ($dados['versao'] ?? 1);
@@ -73,7 +79,6 @@ class RegistrarColetaAction
 
             $this->sincronizarArtefatos($coleta, $dados);
             $this->registrarFotos($coleta);
-            $this->abrirCuradoriaSePreciso($coleta);
 
             return $coleta;
         });
@@ -109,16 +114,23 @@ class RegistrarColetaAction
     }
 
     /**
+     * Enviada = já tem alguma curadoria (pendente ou decidida). Daí em diante a coleta não muda.
+     */
+    public function foiEnviadaParaCuradoria(Coleta $coleta): bool
+    {
+        return Curadoria::where('entidade_tipo', 'coleta')
+            ->where('entidade_id', $coleta->id)
+            ->exists();
+    }
+
+    /**
      * Coloca a coleta na fila de curadoria (RF03) quando ela ainda não tem nenhuma curadoria.
+     * Chamada quando o coletor toca "Enviar para curadoria", não na sincronização.
      * Reabrir a revisão quando a coleta muda depois de avaliada é a D4 (adiada).
      */
     public function abrirCuradoriaSePreciso(Coleta $coleta): void
     {
-        $jaTemCuradoria = Curadoria::where('entidade_tipo', 'coleta')
-            ->where('entidade_id', $coleta->id)
-            ->exists();
-
-        if (! $jaTemCuradoria) {
+        if (! $this->foiEnviadaParaCuradoria($coleta)) {
             // Mesmo formato do ColetaECuradoriaSeeder.
             Curadoria::create([
                 'entidade_tipo' => 'coleta',

@@ -14,7 +14,7 @@ class AcervoCorrigirDadosTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_abre_curadoria_para_coletas_fora_da_fila_e_pode_rodar_de_novo(): void
+    public function test_nao_manda_coletas_para_a_curadoria_e_pode_rodar_de_novo(): void
     {
         $semFila = Coleta::factory()->count(2)->create();
         $comFila = Coleta::factory()->create();
@@ -23,8 +23,9 @@ class AcervoCorrigirDadosTest extends TestCase
         $this->artisan('acervo:corrigir-dados')->assertSuccessful();
         $this->artisan('acervo:corrigir-dados')->assertSuccessful();
 
+        // Quem envia para curadoria é o coletor, pelo app.
         foreach ($semFila as $coleta) {
-            $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $coleta->id)->count());
+            $this->assertSame(0, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $coleta->id)->count());
         }
         $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $comFila->id)->count());
     }

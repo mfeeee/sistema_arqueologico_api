@@ -63,6 +63,8 @@ Route::prefix('v1/mobile')->group(function () {
 
         // Coletas
         Route::apiResource('coletas', ColetaController::class);
+        // Sincronizar só guarda; a curadoria começa quando o coletor envia.
+        Route::post('coletas/{coleta}/enviar-curadoria', [ColetaController::class, 'enviarParaCuradoria']);
 
         // Sincronização batch (mobile offline)
         Route::post('sync', [SincronizacaoController::class, 'sincronizar']);

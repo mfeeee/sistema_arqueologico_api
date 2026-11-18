@@ -17,4 +17,5 @@ return [
     'curadoria_ja_avaliada' => 'Esta curadoria já foi avaliada.',
     'coleta_excluida' => 'A coleta desta curadoria foi excluída.',
     'sync_recusado' => 'Nenhuma coleta foi aceita.',
+    'coleta_ja_enviada' => 'A coleta já foi enviada para curadoria e não pode mais ser editada.',
 ];

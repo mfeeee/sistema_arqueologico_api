@@ -26,21 +26,19 @@ Artisan::command('acervo:corrigir-dados {--dry-run : Só conta, não grava}', fu
         ->count();
     $this->warn("Grupos de coletas provavelmente duplicadas (mesmo usuário, nome e data): {$gruposDuplicados}. Revise antes de curar.");
 
-    // 1) Coletas fora da fila de curadoria + fotos já enviadas (P15).
+    // 1) Fotos já enviadas pelo app que nunca viraram Midia (P15). A coleta não entra na fila:
+    //    quem envia para curadoria é o coletor, pelo app.
     $semFila = Coleta::query()->whereNotExists(function ($consulta): void {
         $consulta->selectRaw('1')->from('curadorias')
             ->where('curadorias.entidade_tipo', 'coleta')
             ->whereColumn('curadorias.entidade_id', 'coletas.id');
     });
-    $this->info('Coletas sem curadoria: '.(clone $semFila)->count());
+    $this->info('Coletas ainda não enviadas para curadoria (fotos a ligar): '.(clone $semFila)->count());
 
     if (! $simular) {
         $semFila->chunkById(200, function ($coletas) use ($acao): void {
             foreach ($coletas as $coleta) {
-                DB::transaction(function () use ($acao, $coleta): void {
-                    $acao->registrarFotos($coleta);
-                    $acao->abrirCuradoriaSePreciso($coleta);
-                });
+                $acao->registrarFotos($coleta);
             }
         });
     }

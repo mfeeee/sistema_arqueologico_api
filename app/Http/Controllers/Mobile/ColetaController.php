@@ -10,6 +10,7 @@ use App\Models\Coleta;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ColetaController extends Controller
@@ -58,6 +59,36 @@ class ColetaController extends Controller
 
         return new ColetaResource(
             $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias'])
+        );
+    }
+
+    /**
+     * Segundo passo do coletor: sincronizar só guarda no servidor; aqui a coleta entra na fila de
+     * curadoria. Depois disso ela não pode mais ser editada.
+     */
+    public function enviarParaCuradoria(Coleta $coleta, RegistrarColetaAction $registrar): ColetaResource|JsonResponse
+    {
+        $this->authorize('update', $coleta);
+
+        $enviadaAgora = DB::transaction(function () use ($coleta, $registrar): bool {
+            // Trava a coleta: dois toques seguidos no botão não abrem duas curadorias.
+            Coleta::whereKey($coleta->id)->lockForUpdate()->first();
+
+            if ($registrar->foiEnviadaParaCuradoria($coleta)) {
+                return false;
+            }
+
+            $registrar->abrirCuradoriaSePreciso($coleta);
+
+            return true;
+        });
+
+        if (! $enviadaAgora) {
+            return response()->json(['message' => __('errors.coleta_ja_enviada')], 409);
+        }
+
+        return new ColetaResource(
+            $coleta->load(['localizacao', 'artefatoTipos.artefatoTipo', 'midias', 'curadorias'])
         );
     }
 

@@ -8,6 +8,7 @@ use App\Enums\PerfilUsuario;
 use App\Enums\TipoBem;
 use App\Models\Coleta;
 use App\Models\ColetaArtefatoTipo;
+use App\Models\Curadoria;
 use App\Models\Localizacao;
 use App\Models\User;
 use Database\Seeders\ArtefatoTipoSeeder;
@@ -249,7 +250,7 @@ class ColetaCrudTest extends TestCase
 
     // ── Plano de correções, P15 ─────────────────────────────────────────────
 
-    public function test_coleta_criada_pela_api_entra_na_fila_de_curadoria(): void
+    public function test_coleta_criada_pela_api_so_entra_na_fila_quando_enviada(): void
     {
         $id = $this->actingAs($this->coletor)
             ->postJson('/api/v1/mobile/coletas', [
@@ -261,7 +262,54 @@ class ColetaCrudTest extends TestCase
             ->assertCreated()
             ->json('data.uuid');
 
+        $this->assertDatabaseMissing('curadorias', ['entidade_tipo' => 'coleta', 'entidade_id' => $id]);
+
+        $this->actingAs($this->coletor)
+            ->postJson("/api/v1/mobile/coletas/{$id}/enviar-curadoria")
+            ->assertOk()
+            ->assertJsonPath('data.curadoria.status', 'pendente');
+
         $this->assertDatabaseHas('curadorias', ['entidade_tipo' => 'coleta', 'entidade_id' => $id, 'status' => 'pendente']);
+    }
+
+    public function test_enviar_para_curadoria_duas_vezes_responde_409(): void
+    {
+        $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id]);
+
+        $this->actingAs($this->coletor)->postJson("/api/v1/mobile/coletas/{$coleta->id}/enviar-curadoria")->assertOk();
+        $this->actingAs($this->coletor)
+            ->postJson("/api/v1/mobile/coletas/{$coleta->id}/enviar-curadoria")
+            ->assertConflict();
+
+        $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $coleta->id)->count());
+    }
+
+    public function test_so_o_dono_envia_a_coleta_para_curadoria(): void
+    {
+        $coleta = Coleta::factory()->create();
+
+        $this->actingAs($this->coletor)
+            ->postJson("/api/v1/mobile/coletas/{$coleta->id}/enviar-curadoria")
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('curadorias', ['entidade_id' => $coleta->id]);
+    }
+
+    public function test_editar_pela_api_depois_de_enviada_responde_409(): void
+    {
+        $coleta = Coleta::factory()->create(['usuario_id' => $this->coletor->id, 'nome_bem' => 'Original']);
+        $this->actingAs($this->coletor)->postJson("/api/v1/mobile/coletas/{$coleta->id}/enviar-curadoria")->assertOk();
+
+        $this->actingAs($this->coletor)
+            ->putJson("/api/v1/mobile/coletas/{$coleta->id}", [
+                'data_coleta' => '2026-05-01 10:00:00',
+                'nome_bem' => 'Editado',
+                'latitude' => -5.0892,
+                'longitude' => -42.8016,
+            ])
+            ->assertConflict();
+
+        $this->assertSame('Original', $coleta->fresh()->nome_bem);
     }
 
     public function test_editar_coleta_grava_natureza_e_tipo(): void

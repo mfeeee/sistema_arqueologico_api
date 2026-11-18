@@ -80,7 +80,7 @@ class SincronizacaoTest extends TestCase
 
     // ── Plano de correções, P15 (o job roda na hora: QUEUE_CONNECTION=sync) ───
 
-    public function test_sync_grava_artefatos_fotos_localizacao_e_abre_curadoria(): void
+    public function test_sync_grava_artefatos_fotos_e_localizacao_sem_abrir_curadoria(): void
     {
         Storage::fake('s3');
         $this->seed(ArtefatoTipoSeeder::class);
@@ -106,7 +106,8 @@ class SincronizacaoTest extends TestCase
         $this->assertSame('Contas de vidro', $coleta->artefatoTipos()->where('artefato_tipo_id', $outros->id)->value('descricao_nova'));
         $this->assertSame(['midias/foto1.jpg'], $coleta->midias()->pluck('storage_path')->all());
         $this->assertSame('Teresina', $coleta->localizacao->municipio);
-        $this->assertDatabaseHas('curadorias', ['entidade_tipo' => 'coleta', 'entidade_id' => $id, 'status' => 'pendente']);
+        // Sincronizar só guarda: a curadoria começa quando o coletor envia.
+        $this->assertDatabaseMissing('curadorias', ['entidade_tipo' => 'coleta', 'entidade_id' => $id]);
     }
 
     public function test_sync_nao_altera_coleta_de_outro_usuario(): void
@@ -151,33 +152,48 @@ class SincronizacaoTest extends TestCase
         $this->assertSame('Versão 5', $coleta->fresh()->nome_bem);
     }
 
-    public function test_reenvio_da_mesma_versao_nao_abre_segunda_curadoria(): void
-    {
-        $usuario = User::factory()->create();
-        $id = (string) Str::uuid();
-
-        foreach ([1, 2] as $_) {
-            $this->actingAs($usuario)->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id)]])->assertAccepted();
-        }
-
-        $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $id)->count());
-    }
-
-    public function test_edicao_depois_de_avaliada_atualiza_coleta_sem_nova_curadoria(): void
+    public function test_coleta_sincronizada_pode_ser_editada_antes_de_ir_para_curadoria(): void
     {
         $usuario = User::factory()->create();
         $id = (string) Str::uuid();
 
         $this->actingAs($usuario)->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id)]])->assertAccepted();
-        Curadoria::where('entidade_id', $id)->update(['status' => StatusCuradoria::APROVADO->value]);
-
         $this->actingAs($usuario)
-            ->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id, ['nome_bem' => 'Editado', 'versao' => 2])]])
+            ->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id, ['nome_bem' => 'Editado'])]])
             ->assertAccepted();
 
         $this->assertSame('Editado', Coleta::findOrFail($id)->nome_bem);
-        // Reabrir a revisão depois de avaliada é a D4 (adiada).
-        $this->assertSame(1, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $id)->count());
+        $this->assertSame(0, Curadoria::where('entidade_tipo', 'coleta')->where('entidade_id', $id)->count());
+    }
+
+    public function test_coleta_enviada_para_curadoria_nao_pode_mais_ser_editada(): void
+    {
+        $usuario = User::factory()->create();
+        $id = (string) Str::uuid();
+
+        $this->actingAs($usuario)->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id)]])->assertAccepted();
+        $original = Coleta::findOrFail($id)->nome_bem;
+        $this->actingAs($usuario)->postJson("/api/v1/mobile/coletas/{$id}/enviar-curadoria")->assertOk();
+
+        $this->actingAs($usuario)
+            ->postJson('/api/v1/mobile/sync', ['coletas' => [$this->coleta($id, ['nome_bem' => 'Editado', 'versao' => 2])]])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', __('errors.coleta_ja_enviada'))
+            ->assertJsonPath('enviadas_para_curadoria.0', $id);
+
+        $this->assertSame($original, Coleta::findOrFail($id)->nome_bem);
+    }
+
+    public function test_job_tambem_recusa_edicao_de_coleta_ja_enviada(): void
+    {
+        $usuario = User::factory()->create();
+        $coleta = Coleta::factory()->create(['usuario_id' => $usuario->id, 'nome_bem' => 'Original', 'versao' => 1]);
+        Curadoria::factory()->create(['entidade_tipo' => 'coleta', 'entidade_id' => $coleta->id, 'status' => StatusCuradoria::PENDENTE->value]);
+
+        (new ProcessarSincronizacao($usuario->id, [$this->coleta($coleta->id, ['nome_bem' => 'Trocado', 'versao' => 2])]))
+            ->handle(app(RegistrarColetaAction::class));
+
+        $this->assertSame('Original', $coleta->fresh()->nome_bem);
     }
 
     /**

@@ -17,4 +17,5 @@ return [
     'curadoria_ja_avaliada' => 'This review has already been evaluated.',
     'coleta_excluida' => 'The collection for this review was deleted.',
     'sync_recusado' => 'No collection was accepted.',
+    'coleta_ja_enviada' => 'The collection was already sent for review and can no longer be edited.',
 ];
