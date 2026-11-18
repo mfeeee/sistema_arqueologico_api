@@ -91,8 +91,13 @@ class User extends Authenticatable
      */
     public function caminhoDoAvatar(): ?string
     {
-        return $this->avatar_url
-            ? str_replace(Storage::disk('s3')->url(''), '', $this->avatar_url)
-            : null;
+        if (! $this->avatar_url) {
+            return null;
+        }
+
+        // url('') falha no driver S3 (chave vazia); a base sai de um caminho qualquer.
+        $base = Str::beforeLast(Storage::disk('s3')->url('_'), '_');
+
+        return str_replace($base, '', $this->avatar_url);
     }
 }
