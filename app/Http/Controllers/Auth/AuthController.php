@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\PerfilUsuario;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,15 +44,18 @@ class AuthController extends Controller
         ]);
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
+        $dados = $request->validated();
+
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => $request->password,
+            'name' => $dados['name'],
+            'email' => $dados['email'],
+            'password' => $dados['password'],
             'perfil' => PerfilUsuario::COLETOR,
-            'classificacao' => $request->classificacao,
+            'classificacao' => $dados['classificacao'],
             'ativo' => true,
+            'termos_aceitos_em' => $request->boolean('termos_aceitos') ? now() : null,
         ]);
 
         $token = $user->createToken(
@@ -78,8 +82,17 @@ class AuthController extends Controller
         return response()->json(['message' => __('success.logout')]);
     }
 
-    public function me(Request $request): JsonResponse
+    /**
+     * Troca o token atual por um novo (D5). O app chama ao abrir, antes de os 30 dias vencerem;
+     * o token antigo deixa de valer.
+     */
+    public function refresh(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        return response()->json([
+            'token' => $user->createToken(name: 'mobile', abilities: [$user->perfil->value])->plainTextToken,
+        ]);
     }
 }

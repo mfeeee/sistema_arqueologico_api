@@ -4,6 +4,7 @@ namespace Tests\Feature\Profile;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AnonimizarContaTest extends TestCase
@@ -58,5 +59,22 @@ class AnonimizarContaTest extends TestCase
     public function test_delete_conta_sem_token_retorna_401(): void
     {
         $this->deleteJson('/api/auth/conta')->assertUnauthorized();
+    }
+
+    public function test_delete_conta_apaga_foto_de_perfil_e_token_de_push(): void
+    {
+        Storage::fake('s3');
+        Storage::disk('s3')->put('avatars/foto.jpg', 'conteudo');
+
+        $user = User::factory()->create([
+            'avatar_url' => Storage::disk('s3')->url('avatars/foto.jpg'),
+            'fcm_token' => 'token-push',
+        ]);
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        $this->withToken($token)->deleteJson('/api/auth/conta')->assertOk();
+
+        Storage::disk('s3')->assertMissing('avatars/foto.jpg');
+        $this->assertNull(User::withTrashed()->find($user->id)->fcm_token);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\BemMaterial;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BemMaterialController extends Controller
 {
@@ -74,6 +75,37 @@ class BemMaterialController extends Controller
             'data_hora' => now(),
             'valor_anterior' => ['publicado' => $anterior],
             'valor_novo' => ['publicado' => $novo],
+        ]);
+
+        return response()->json($bemMaterial->fresh(['midias', 'responsaveis']));
+    }
+
+    /**
+     * Número do CNSA, preenchido pelo curador depois da aprovação (quadro CNSA do TCC).
+     * Só tamanho e unicidade: o formato oficial do número não é validado aqui.
+     */
+    public function atualizarCodigoIphan(Request $request, BemMaterial $bemMaterial): JsonResponse
+    {
+        $this->authorize('update', $bemMaterial);
+
+        $dados = $request->validate([
+            'codigo_iphan' => ['present', 'nullable', 'string', 'max:50', Rule::unique('bens_materiais', 'codigo_iphan')->ignore($bemMaterial->id)],
+        ]);
+
+        $anterior = $bemMaterial->codigo_iphan;
+
+        BemMaterial::withoutEvents(fn () => $bemMaterial->update(['codigo_iphan' => $dados['codigo_iphan']]));
+
+        Auditoria::create([
+            'usuario_id' => $request->user()->id,
+            'entidade_tipo' => BemMaterial::class,
+            'entidade_id' => $bemMaterial->id,
+            'curadoria_id' => null,
+            'operacao' => 'Alteração',
+            'meio' => 'Manual',
+            'data_hora' => now(),
+            'valor_anterior' => ['codigo_iphan' => $anterior],
+            'valor_novo' => ['codigo_iphan' => $dados['codigo_iphan']],
         ]);
 
         return response()->json($bemMaterial->fresh(['midias', 'responsaveis']));

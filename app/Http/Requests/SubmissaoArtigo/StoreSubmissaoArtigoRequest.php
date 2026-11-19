@@ -22,7 +22,7 @@ class StoreSubmissaoArtigoRequest extends FormRequest
         $artigoExistente = $this->filled('artigo_id');
 
         return [
-            'bem_material_id' => ['required', 'uuid', 'exists:bens_materiais,id'],
+            'bem_material_id' => ['required', 'uuid', Rule::exists('bens_materiais', 'id')->whereNull('deleted_at')],
             'artigo_id' => ['nullable', 'uuid', 'exists:artigos_cientificos,id'],
             'doi' => ['nullable', 'string', 'max:255'],
             // Obrigatórios apenas quando o artigo ainda não existe no sistema

@@ -31,6 +31,19 @@ class ColetaResource extends JsonResource
                 $this->whenLoaded('artefatoTipos')),
             'midias' => MidiaResource::collection(
                 $this->whenLoaded('midias')),
+            // Decisão mais recente da curadoria, para o coletor ver se foi aprovada e o motivo de uma rejeição.
+            'curadoria' => $this->whenLoaded('curadorias', function (): ?array {
+                $ultima = $this->curadorias->sortByDesc('created_at')->first();
+
+                return $ultima === null ? null : [
+                    'id' => $ultima->id,
+                    'status' => $ultima->status?->value,
+                    'acao_resultante' => $ultima->acao_resultante?->value,
+                    'observacao' => $ultima->observacao,
+                    'data_avaliacao' => $ultima->data_avaliacao?->toIso8601String(),
+                    'bem_material_id' => $ultima->bem_material_id,
+                ];
+            }),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'deletado_em' => $this->deleted_at?->toIso8601String(),
         ];

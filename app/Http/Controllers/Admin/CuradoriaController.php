@@ -3,15 +3,23 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\AcaoResultanteCuradoria;
-use App\Enums\StatusColeta;
+use App\Enums\PerfilUsuario;
+use App\Enums\StatusCuradoria;
+use App\Enums\TipoNotificacao;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Curadoria\AvaliarCuradoriaRequest;
 use App\Models\ArtigoAutor;
 use App\Models\ArtigoBemMaterial;
 use App\Models\ArtigoCientifico;
 use App\Models\Auditoria;
+use App\Models\BemArtefatoTipo;
 use App\Models\BemMaterial;
+use App\Models\BemNomePopular;
+use App\Models\Coleta;
 use App\Models\Curadoria;
+use App\Models\Midia;
+use App\Models\Notificacao;
+use App\Models\PreferenciaNotificacao;
 use App\Models\SubmissaoArtigo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,7 +57,7 @@ class CuradoriaController extends Controller
             'curador' => fn ($q) => $q->withTrashed(),
         ]);
 
-        return response()->json($this->carregarEntidade($curadoria));
+        return response()->json($this->carregarEntidade($curadoria, completo: true));
     }
 
     public function porBemMaterial(BemMaterial $bemMaterial): JsonResponse
@@ -73,7 +81,7 @@ class CuradoriaController extends Controller
      * Agrega coletas aprovadas e submissões de artigos aprovadas.
      * GET /admin/bens-materiais/{id}/colaboradores
      */
-    public function colaboradores(BemMaterial $bemMaterial): JsonResponse
+    public function colaboradores(Request $request, BemMaterial $bemMaterial): JsonResponse
     {
         $this->authorize('view', $bemMaterial);
 
@@ -109,6 +117,13 @@ class CuradoriaController extends Controller
             ORDER BY u.name, contrib.origem
         ", [$bemMaterial->id, $bemMaterial->id]);
 
+        // A rota também é pública: e-mail é dado pessoal e só curador e admin veem (LGPD).
+        if (! in_array($request->user()?->perfil, [PerfilUsuario::CURADOR, PerfilUsuario::ADMIN], true)) {
+            foreach ($colaboradores as $colaborador) {
+                unset($colaborador->email);
+            }
+        }
+
         return response()->json([
             'bem_material_id' => $bemMaterial->id,
             'colaboradores' => $colaboradores,
@@ -119,10 +134,17 @@ class CuradoriaController extends Controller
     {
         $this->authorize('avaliar', $curadoria);
 
-        DB::transaction(function () use ($request, $curadoria) {
-            match ($curadoria->entidade_tipo) {
-                'coleta' => $this->avaliarColeta($request, $curadoria),
-                'submissao_artigo' => $this->avaliarSubmissaoArtigo($request, $curadoria),
+        DB::transaction(function () use ($request, $curadoria): void {
+            // Trava a linha: duas avaliações simultâneas da mesma curadoria esperam uma pela outra.
+            $travada = Curadoria::whereKey($curadoria->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($travada->status !== StatusCuradoria::PENDENTE) {
+                abort(422, __('errors.curadoria_ja_avaliada'));
+            }
+
+            match ($travada->entidade_tipo) {
+                'coleta' => $this->avaliarColeta($request, $travada),
+                'submissao_artigo' => $this->avaliarSubmissaoArtigo($request, $travada),
                 default => null,
             };
         });
@@ -134,17 +156,26 @@ class CuradoriaController extends Controller
      * Carrega a entidade relacionada na curadoria com base no entidade_tipo
      * e a embute no modelo como atributo nomeado (ex.: 'coleta').
      * Mantém compatibilidade com o web que lê raw.get("coleta").
+     *
+     * Com $completo (tela de revisão), traz também artefatos, fotos e nomes da coleta e do sítio,
+     * para o curador comparar o que veio do campo com o registro oficial.
      */
-    private function carregarEntidade(Curadoria $curadoria): Curadoria
+    private function carregarEntidade(Curadoria $curadoria, bool $completo = false): Curadoria
     {
         match ($curadoria->entidade_tipo) {
-            'coleta' => $curadoria->setRelation('coleta', $curadoria->coleta),
+            'coleta' => $curadoria->setRelation('coleta', $completo
+                ? $curadoria->coleta?->load(['artefatoTipos.artefatoTipo', 'midias', 'localizacao'])
+                : $curadoria->coleta),
             'submissao_artigo' => $curadoria->setRelation(
                 'submissao_artigo',
                 SubmissaoArtigo::with(['bemMaterial', 'artigo'])->find($curadoria->entidade_id)
             ),
             default => null,
         };
+
+        if ($completo) {
+            $curadoria->bemMaterial?->loadMissing(['artefatoTipos.artefatoTipo', 'nomesPopulares', 'midias']);
+        }
 
         return $curadoria;
     }
@@ -155,12 +186,18 @@ class CuradoriaController extends Controller
      */
     private function avaliarColeta(AvaliarCuradoriaRequest $request, Curadoria $curadoria): void
     {
+        // Coleta usa exclusão lógica: depois de excluída, a relação vem nula.
+        if ($curadoria->coleta === null) {
+            abort(422, __('errors.coleta_excluida'));
+        }
+
         $acao = AcaoResultanteCuradoria::from($request->acao_resultante);
         $bemMaterialId = null;
 
         if ($acao === AcaoResultanteCuradoria::CRIAR_SITIO) {
-            $campos = $this->resolverCampos($request, $curadoria);
-            $bem = $this->criarBemMaterial($curadoria, (bool) $request->input('publicado', false), $campos);
+            [$campos, $relacoes] = $this->separarRelacoes($this->resolverCampos($request, $curadoria));
+            $bem = $this->criarBemMaterial($curadoria, $request->user()->id, (bool) $request->input('publicado', false), $request->string('tipo')->value(), $campos);
+            $this->copiarDadosDaColeta($bem, $curadoria->coleta, $relacoes, aceitarTudo: ! $request->filled('campos'));
             $bemMaterialId = $bem->id;
 
             Auditoria::create([
@@ -172,7 +209,7 @@ class CuradoriaController extends Controller
                 'meio' => 'Curadoria',
                 'data_hora' => now(),
                 'valor_anterior' => null,
-                'valor_novo' => $this->snapshot($bem),
+                'valor_novo' => $this->snapshot($bem->fresh()),
             ]);
 
         } elseif ($acao === AcaoResultanteCuradoria::ATUALIZAR_SITIO) {
@@ -180,11 +217,21 @@ class CuradoriaController extends Controller
             $bemMaterialId = $bem->id;
             $anterior = $this->snapshot($bem);
 
-            $campos = $this->resolverCampos($request, $curadoria);
-            $campos['publicado'] = (bool) $request->input('publicado', false);
+            [$campos, $relacoes] = $this->separarRelacoes($this->resolverCampos($request, $curadoria));
+            // A publicação é decisão separada: sem o campo, o sítio mantém o estado atual.
+            $campos['publicado'] = $request->has('publicado')
+                ? $request->boolean('publicado')
+                : (bool) $bem->publicado;
+
+            // Responsável técnico = curador que aprovou (quadro CNSA do TCC), se ainda não houver.
+            if ($bem->curador_responsavel_id === null) {
+                $campos['curador_responsavel_id'] = $request->user()->id;
+            }
 
             if (! empty($campos)) {
                 BemMaterial::withoutEvents(fn () => $bem->update($campos));
+                // D6: artefatos, nomes e fotos da coleta somam ao que o sítio já tem.
+                $this->copiarDadosDaColeta($bem, $curadoria->coleta, $relacoes, aceitarTudo: ! $request->filled('campos'));
 
                 if (array_key_exists('latitude', $campos) || array_key_exists('longitude', $campos)) {
                     $bem->refresh();
@@ -203,7 +250,7 @@ class CuradoriaController extends Controller
                     'meio' => 'Curadoria',
                     'data_hora' => now(),
                     'valor_anterior' => $anterior,
-                    'valor_novo' => array_intersect_key($this->snapshot($bem->fresh()), $campos),
+                    'valor_novo' => array_intersect_key($this->snapshot($bem->fresh()), $campos + $relacoes),
                 ]);
             }
         } else {
@@ -235,9 +282,16 @@ class CuradoriaController extends Controller
             'usuario_id' => $request->user()->id,
         ]);
 
-        $curadoria->coleta->update([
-            'status_sincronizacao' => StatusColeta::SINCRONIZADO->value,
-        ]);
+        // status_sincronizacao fica como está: é o estado da sincronização, não da curadoria (P19).
+        $coleta = $curadoria->coleta;
+        $aprovada = $request->status === StatusCuradoria::APROVADO->value;
+        $this->notificarAutor(
+            $coleta->usuario_id,
+            $aprovada ? 'Coleta aprovada' : 'Coleta rejeitada',
+            $aprovada
+                ? "Sua coleta \"{$coleta->nome_bem}\" foi aprovada pela curadoria."
+                : "Sua coleta \"{$coleta->nome_bem}\" foi rejeitada. Motivo: ".rtrim($request->observacao ?: 'não informado', '.').'.',
+        );
     }
 
     /**
@@ -378,6 +432,34 @@ class CuradoriaController extends Controller
             'observacao' => $request->observacao,
             'usuario_id' => $request->user()->id,
         ]);
+
+        $aprovado = $request->status === StatusCuradoria::APROVADO->value;
+        $this->notificarAutor(
+            $submissao->usuario_id,
+            $aprovado ? 'Artigo aprovado' : 'Artigo rejeitado',
+            $aprovado
+                ? "Seu artigo \"{$submissao->titulo}\" foi aprovado e vinculado ao sítio."
+                : "Seu artigo \"{$submissao->titulo}\" foi rejeitado. Motivo: ".rtrim($request->observacao ?: 'não informado', '.').'.',
+        );
+    }
+
+    /**
+     * Avisa o autor (coletor ou quem submeteu o artigo) da decisão, se ele não desligou
+     * a preferência "coleta". Roda na transação da avaliação: se ela falhar, o aviso some junto.
+     */
+    private function notificarAutor(string $usuarioId, string $titulo, string $corpo): void
+    {
+        if (PreferenciaNotificacao::firstWhere('user_id', $usuarioId)?->coleta === false) {
+            return;
+        }
+
+        Notificacao::create([
+            'usuario_id' => $usuarioId,
+            'tipo' => TipoNotificacao::Coleta,
+            'titulo' => $titulo,
+            'corpo' => $corpo,
+            'lida' => false,
+        ]);
     }
 
     /**
@@ -442,7 +524,7 @@ class CuradoriaController extends Controller
             'id' => $bem->id,
             'codigo_iphan' => $bem->codigo_iphan,
             'nome_bem' => $bem->nome_bem,
-            'nomes_populares' => $bem->nomes_populares,
+            'nomes_populares' => $bem->nomesPopulares()->pluck('nome')->all(),
             'natureza' => $bem->natureza?->value ?? $bem->natureza,
             'tipo' => $bem->tipo?->value ?? $bem->tipo,
             'uf' => $bem->uf,
@@ -452,7 +534,9 @@ class CuradoriaController extends Controller
             'meios_acesso' => $bem->meios_acesso,
             'latitude' => (float) $bem->latitude,
             'longitude' => (float) $bem->longitude,
-            'artefatos' => $bem->artefatos,
+            'artefatos' => $bem->artefatoTipos()->with('artefatoTipo')->get()
+                ->map(fn (BemArtefatoTipo $item) => $item->descricao_nova ?: $item->artefatoTipo?->nome)
+                ->filter()->values()->all(),
             'publicado' => $bem->publicado,
             'ano_registro' => $bem->ano_registro,
             'descricao_atualizacao' => $bem->descricao_atualizacao,
@@ -463,12 +547,12 @@ class CuradoriaController extends Controller
     /**
      * Cria um novo BemMaterial a partir dos dados da coleta,
      * incluindo campos extras presentes em dados_coletados.
-     */
-    /**
+     *
+     * @param  string  $tipo  Decidido pelo curador (D2); o tipo_bem da coleta é só sugestão.
      * @param  array<string, mixed>  $camposSelecionados  Campos aceitos pelo curador.
      *                                                    Vazio = aceita todos os campos não-nulos da coleta.
      */
-    private function criarBemMaterial(Curadoria $curadoria, bool $publicado = false, array $camposSelecionados = []): BemMaterial
+    private function criarBemMaterial(Curadoria $curadoria, string $curadorId, bool $publicado, string $tipo, array $camposSelecionados = []): BemMaterial
     {
         $coleta = $curadoria->coleta;
         $dados = is_array($coleta->dados_coletados) ? $coleta->dados_coletados : [];
@@ -476,20 +560,19 @@ class CuradoriaController extends Controller
         // Campos obrigatórios — sempre incluídos independente da seleção.
         $base = [
             'coleta_id' => $coleta->id,
+            'curador_responsavel_id' => $curadorId,
             'publicado' => $publicado,
+            'tipo' => $tipo,
             'ano_registro' => Carbon::now()->year,
             'latitude' => $coleta->latitude,
             'longitude' => $coleta->longitude,
         ];
 
-        // Campos opcionais derivados da coleta.
+        // Campos opcionais derivados da coleta. Artefatos e nomes populares são relações (copiarDadosDaColeta).
         $candidatos = [
             'nome_bem' => $coleta->nome_bem,
             'natureza' => $coleta->natureza_bem?->value,
-            'tipo' => $coleta->tipo_bem?->value,
             'uf' => $coleta->uf,
-            'artefatos' => $coleta->artefatos,
-            'nomes_populares' => $dados['nomes_populares'] ?? null,
             'meios_acesso' => $dados['meios_acesso'] ?? null,
             'municipio' => $dados['municipio'] ?? null,
             'cep' => $dados['cep'] ?? null,
@@ -522,5 +605,67 @@ class CuradoriaController extends Controller
         );
 
         return $bem;
+    }
+
+    /**
+     * Artefatos e nomes populares são relações, não colunas de bens_materiais.
+     *
+     * @param  array<string, mixed>  $campos
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function separarRelacoes(array $campos): array
+    {
+        $relacoes = array_intersect_key($campos, array_flip(['artefatos', 'nomes_populares']));
+
+        return [array_diff_key($campos, $relacoes), $relacoes];
+    }
+
+    /**
+     * Leva ao sítio os artefatos, os nomes populares e as fotos da coleta aprovada.
+     * Soma ao que o sítio já tem (D6). Sem seleção explícita do curador, aceita tudo.
+     *
+     * @param  array<string, mixed>  $relacoes
+     */
+    private function copiarDadosDaColeta(BemMaterial $bem, Coleta $coleta, array $relacoes, bool $aceitarTudo): void
+    {
+        if ($aceitarTudo || array_key_exists('artefatos', $relacoes)) {
+            foreach ($coleta->artefatoTipos as $item) {
+                BemArtefatoTipo::firstOrCreate(
+                    ['bem_material_id' => $bem->id, 'artefato_tipo_id' => $item->artefato_tipo_id],
+                    ['novo_tipo' => $item->novo_tipo, 'descricao_nova' => $item->descricao_nova],
+                );
+            }
+        }
+
+        if ($aceitarTudo || array_key_exists('nomes_populares', $relacoes)) {
+            $nomes = $relacoes['nomes_populares'] ?? ($coleta->dados_coletados['nomes_populares'] ?? []);
+
+            foreach ($this->nomesDe($nomes) as $nome) {
+                BemNomePopular::firstOrCreate(['bem_material_id' => $bem->id, 'nome' => $nome]);
+            }
+        }
+
+        // Fotos sempre seguem para a galeria do sítio; o arquivo não é copiado, só o registro.
+        foreach ($coleta->midias as $midia) {
+            Midia::firstOrCreate(
+                ['mediable_type' => BemMaterial::class, 'mediable_id' => $bem->id, 'storage_path' => $midia->storage_path],
+                $midia->only(['storage_disk', 'mime_type', 'tipo', 'descricao']),
+            );
+        }
+    }
+
+    /**
+     * Aceita "A, B", "A; B", ['A', 'B'] ou [['nome' => 'A']].
+     *
+     * @return list<string>
+     */
+    private function nomesDe(mixed $valor): array
+    {
+        $lista = is_array($valor) ? $valor : preg_split('/[;,]/', (string) $valor);
+
+        return array_values(array_filter(array_map(
+            fn ($nome): string => trim(is_array($nome) ? (string) ($nome['nome'] ?? '') : (string) $nome),
+            $lista,
+        )));
     }
 }

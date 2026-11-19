@@ -8,6 +8,7 @@ use App\Models\Notificacao;
 use App\Models\PreferenciaNotificacao;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AnonimizarUsuarioAction
@@ -20,6 +21,8 @@ class AnonimizarUsuarioAction
      */
     public function execute(User $user): void
     {
+        $caminhoAvatar = $user->caminhoDoAvatar();
+
         DB::transaction(function () use ($user) {
             // Revogar todos os tokens Sanctum antes de qualquer alteração
             $user->tokens()->delete();
@@ -35,6 +38,7 @@ class AnonimizarUsuarioAction
                 'two_factor_secret' => null,
                 'two_factor_recovery_codes' => null,
                 'two_factor_confirmed_at' => null,
+                'fcm_token' => null,
                 'ativo' => false,
             ])->save();
 
@@ -58,5 +62,10 @@ class AnonimizarUsuarioAction
             // Soft-delete: seta deleted_at, mantém o registro para integridade das FK
             $user->delete();
         });
+
+        // A foto foi enviada como pública: só apaga depois que o banco confirmou a anonimização.
+        if ($caminhoAvatar !== null) {
+            Storage::disk('s3')->delete($caminhoAvatar);
+        }
     }
 }

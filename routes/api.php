@@ -24,13 +24,17 @@ use Illuminate\Support\Facades\Route;
 // -- Auth (Publico)
 
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/password-reset', [PasswordResetController::class, 'solicitar']);
-    Route::post('/password-reset/confirm', [PasswordResetController::class, 'confirmar']);
+    // 10 tentativas por minuto por e-mail e IP (P30).
+    Route::middleware('throttle:login')->group(function () {
+        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/register', [AuthController::class, 'register']);
+        Route::post('/password-reset', [PasswordResetController::class, 'solicitar']);
+        Route::post('/password-reset/confirm', [PasswordResetController::class, 'confirmar']);
+    });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'conta.ativa'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::get('/me', [ProfileController::class, 'show']);
         Route::patch('/me', [ProfileController::class, 'update']);
         Route::post('/me/avatar', [ProfileController::class, 'uploadAvatar']);
@@ -44,7 +48,7 @@ Route::prefix('auth')->group(function () {
 // -- Mobile
 Route::prefix('v1/mobile')->group(function () {
     // Leitura pública — token opcional, validado se enviado; 30 req/min (guest) ou 120 (autenticado)
-    Route::middleware(['auth.optional:sanctum', 'throttle:public-api'])->group(function () {
+    Route::middleware(['auth.optional:sanctum', 'conta.ativa', 'throttle:public-api'])->group(function () {
         Route::get('bens-materiais/nearby', [BemMaterialController::class, 'nearby']);
         Route::get('bens-materiais', [BemMaterialController::class, 'index']);
         Route::get('bens-materiais/{bemMaterial}', [BemMaterialController::class, 'show']);
@@ -53,12 +57,14 @@ Route::prefix('v1/mobile')->group(function () {
     });
 
     // Autenticação obrigatória
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'conta.ativa'])->group(function () {
         // Tipos de Artefato
         Route::get('artefato-tipos', [ArtefatoTipoController::class, 'index']);
 
         // Coletas
         Route::apiResource('coletas', ColetaController::class);
+        // Sincronizar só guarda; a curadoria começa quando o coletor envia.
+        Route::post('coletas/{coleta}/enviar-curadoria', [ColetaController::class, 'enviarParaCuradoria']);
 
         // Sincronização batch (mobile offline)
         Route::post('sync', [SincronizacaoController::class, 'sincronizar']);
@@ -81,7 +87,7 @@ Route::prefix('v1/mobile')->group(function () {
 });
 
 // -- Admin/Site
-Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->group(function () {
+Route::prefix('v1/admin')->middleware(['auth:sanctum', 'conta.ativa', 'role:admin,curador'])->group(function () {
     // Curadorias
     Route::get('curadorias', [CuradoriaController::class, 'index']);
     Route::get('curadorias/{curadoria}', [CuradoriaController::class, 'show']);
@@ -91,6 +97,7 @@ Route::prefix('v1/admin')->middleware(['auth:sanctum', 'role:admin,curador'])->g
     // Bens Materiais (admin)
     Route::patch('bens-materiais/{bemMaterial}/publicar', [AdminBemMaterialController::class, 'publicar']);
     Route::patch('bens-materiais/{bemMaterial}/curador-responsavel', [AdminBemMaterialController::class, 'atualizarCuradorResponsavel']);
+    Route::patch('bens-materiais/{bemMaterial}/codigo-iphan', [AdminBemMaterialController::class, 'atualizarCodigoIphan']);
     Route::delete('bens-materiais/{bemMaterial}', [AdminBemMaterialController::class, 'destroy']);
     Route::post('bens-materiais/{bemMaterial}/responsaveis', [BemResponsavelController::class, 'store']);
     Route::delete('bens-materiais/{bemMaterial}/responsaveis/{bemResponsavel}', [BemResponsavelController::class, 'destroy']);

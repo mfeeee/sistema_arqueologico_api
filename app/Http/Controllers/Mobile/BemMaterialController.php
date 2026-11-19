@@ -72,17 +72,13 @@ class BemMaterialController extends Controller
         return BemMaterialResource::collection($bens);
     }
 
-    public function show(Request $request, BemMaterial $bemMaterial): JsonResponse|Responsable
+    public function show(BemMaterial $bemMaterial): JsonResponse|Responsable
     {
-        $bemMaterialId = basename($request->path());
-
-        $bemMaterial = BemMaterial::query()
-            ->with(['midias', 'responsaveis.usuario', 'curadorResponsavel', 'artefatoTipos.artefatoTipo'])
-            ->findOrFail($bemMaterialId);
-
         $this->authorize('view', $bemMaterial);
 
-        return new BemMaterialResource($bemMaterial);
+        return new BemMaterialResource(
+            $bemMaterial->load(['midias', 'responsaveis.usuario', 'curadorResponsavel', 'artefatoTipos.artefatoTipo'])
+        );
     }
 
     private function resolvePublicadoFilter(Request $request): array

@@ -1,6 +1,8 @@
 <?php
 
+use App\Exceptions\SincronizacaoException;
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\GarantirContaAtiva;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\OptionalAuthenticate;
 use App\Http\Middleware\SetLocale;
@@ -24,6 +26,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Atrás do proxy do Railway, o IP da conexão é o do proxy; o IP real vem no X-Forwarded-For,
+        // que o proxy reescreve. Sem isso, os limites por IP valem para todos os visitantes juntos (P30).
+        $middleware->trustProxies(at: '*');
+
         $middleware->statefulApi();
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
@@ -48,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => CheckRole::class,
             'auth.optional' => OptionalAuthenticate::class,
+            'conta.ativa' => GarantirContaAtiva::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -60,6 +67,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthorizationException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => __('errors.forbidden')], 403);
+            }
+        });
+
+        // Coleta de outro usuário, excluída ou com versão antiga (RegistrarColetaAction).
+        $exceptions->render(function (SincronizacaoException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 409);
             }
         });
 

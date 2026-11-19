@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -29,12 +30,28 @@ class User extends Authenticatable
         'perfil',
         'classificacao',
         'ativo',
+        'fcm_token',
+        'termos_aceitos_em',
+    ];
+
+    /**
+     * Campos que nunca saem da API.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'fcm_token',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'termos_aceitos_em' => 'datetime',
             'password' => 'hashed',
             'ativo' => 'boolean',
             'perfil' => PerfilUsuario::class,
@@ -69,5 +86,20 @@ class User extends Authenticatable
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
         $this->notify(new RecuperacaoSenhaNotification($token));
+    }
+
+    /**
+     * Caminho do avatar no S3, a partir da URL salva.
+     */
+    public function caminhoDoAvatar(): ?string
+    {
+        if (! $this->avatar_url) {
+            return null;
+        }
+
+        // url('') falha no driver S3 (chave vazia); a base sai de um caminho qualquer.
+        $base = Str::beforeLast(Storage::disk('s3')->url('_'), '_');
+
+        return str_replace($base, '', $this->avatar_url);
     }
 }

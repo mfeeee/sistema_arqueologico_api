@@ -75,4 +75,31 @@ class LoginTest extends TestCase
             ->getJson('/api/auth/me')
             ->assertStatus(401);
     }
+
+    // ── Plano de correções, P30 ────────────────────────────────────────────────
+
+    public function test_11a_tentativa_no_mesmo_minuto_recebe_429(): void
+    {
+        $user = User::factory()->create();
+        $tentativa = ['email' => $user->email, 'password' => fake()->password(12)];
+
+        for ($i = 0; $i < 10; $i++) {
+            $this->postJson('/api/auth/login', $tentativa)->assertUnauthorized();
+        }
+
+        $this->postJson('/api/auth/login', $tentativa)->assertTooManyRequests();
+    }
+
+    public function test_limite_de_um_email_nao_trava_outro(): void
+    {
+        $alvo = User::factory()->create();
+        $senhaDoOutro = fake()->password(12);
+        $outro = User::factory()->create(['password' => $senhaDoOutro]);
+
+        for ($i = 0; $i < 11; $i++) {
+            $this->postJson('/api/auth/login', ['email' => $alvo->email, 'password' => fake()->password(12)]);
+        }
+
+        $this->postJson('/api/auth/login', ['email' => $outro->email, 'password' => $senhaDoOutro])->assertOk();
+    }
 }

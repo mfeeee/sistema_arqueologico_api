@@ -182,4 +182,60 @@ class AuditoriaTest extends TestCase
             ->assertJsonPath('usuario.id', $this->curador->id)
             ->assertJsonPath('curadoria.id', $curadoria->id);
     }
+
+    // ── restauração (plano de correções, R3) ──────────────────────────────────
+
+    public function test_restaurar_alteracao_volta_os_campos(): void
+    {
+        $bem = BemMaterial::factory()->create(['nome_bem' => 'Nome novo']);
+        $auditoria = Auditoria::factory()
+            ->alteracaoSimples(['nome_bem' => 'Nome antigo'], ['nome_bem' => 'Nome novo'])
+            ->create(['entidade_id' => $bem->id, 'usuario_id' => $this->curador->id]);
+
+        $this->actingAs($this->curador)
+            ->postJson("/api/v1/admin/auditorias/{$auditoria->id}/restaurar")
+            ->assertOk();
+
+        $this->assertSame('Nome antigo', $bem->fresh()->nome_bem);
+    }
+
+    public function test_restaurar_insercao_exclui_o_sitio(): void
+    {
+        $bem = BemMaterial::factory()->create();
+        $auditoria = Auditoria::factory()
+            ->insercao(['nome_bem' => $bem->nome_bem])
+            ->create(['entidade_id' => $bem->id, 'usuario_id' => $this->curador->id]);
+
+        $this->actingAs($this->curador)
+            ->postJson("/api/v1/admin/auditorias/{$auditoria->id}/restaurar")
+            ->assertOk();
+
+        $this->assertSoftDeleted($bem);
+    }
+
+    public function test_restaurar_recusa_auditoria_que_nao_e_de_sitio(): void
+    {
+        $auditoria = Auditoria::factory()
+            ->alteracaoSimples(['perfil' => 'coletor'], ['perfil' => 'curador'])
+            ->create([
+                'entidade_tipo' => User::class,
+                'entidade_id' => $this->coletor->id,
+                'usuario_id' => $this->admin->id,
+            ]);
+
+        $this->actingAs($this->admin)
+            ->postJson("/api/v1/admin/auditorias/{$auditoria->id}/restaurar")
+            ->assertStatus(422);
+    }
+
+    public function test_coletor_nao_pode_restaurar(): void
+    {
+        $auditoria = Auditoria::factory()
+            ->alteracaoSimples(['nome_bem' => 'A'], ['nome_bem' => 'B'])
+            ->create(['usuario_id' => $this->curador->id]);
+
+        $this->actingAs($this->coletor)
+            ->postJson("/api/v1/admin/auditorias/{$auditoria->id}/restaurar")
+            ->assertForbidden();
+    }
 }

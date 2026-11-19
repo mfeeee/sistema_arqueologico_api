@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    // Segredo compartilhado com o site Django (API_CLIENT_KEY lá): limite próprio na API pública.
+    'web' => [
+        'client_key' => env('WEB_CLIENT_KEY'),
+    ],
+
     'brevo' => [
         'dsn' => env('BREVO_DSN'),
     ],
