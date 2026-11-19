@@ -78,6 +78,27 @@ class SincronizacaoTest extends TestCase
             ->assertJsonValidationErrors(['coletas.0.latitude']);
     }
 
+    public function test_mensagem_de_validacao_usa_nome_legivel_do_campo(): void
+    {
+        $user = User::factory()->create(['ativo' => true]);
+
+        $this->actingAs($user)
+            ->withHeader('Accept-Language', 'pt-BR')
+            ->postJson('/api/v1/mobile/sync', [
+                'coletas' => [[
+                    'id' => fake()->uuid(),
+                    'data_coleta' => '2026-05-01',
+                    'nome_bem' => 'Sítio',
+                    'latitude' => -5.09,
+                    'longitude' => -42.80,
+                    'localizacao' => ['cep' => '79846494694'],
+                    'versao' => 1,
+                ]],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['coletas.0.localizacao.cep' => 'O campo CEP']);
+    }
+
     // ── Plano de correções, P15 (o job roda na hora: QUEUE_CONNECTION=sync) ───
 
     public function test_sync_grava_artefatos_fotos_e_localizacao_sem_abrir_curadoria(): void
